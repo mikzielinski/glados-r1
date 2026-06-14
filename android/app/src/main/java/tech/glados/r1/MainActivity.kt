@@ -118,6 +118,12 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
 
         binding.settingsButton.setOnClickListener { showSettings() }
 
+        // Hardware keys (side button, scroll wheel) need activity focus — not the lens.
+        binding.root.isFocusableInTouchMode = true
+        binding.root.requestFocus()
+        binding.transcriptScroll.isFocusable = false
+        binding.lens.isFocusableInTouchMode = false
+
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         val pm = getSystemService(POWER_SERVICE) as PowerManager
@@ -161,7 +167,13 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
         stopLocationRefresh()
     }
 
+    override fun onResume() {
+        super.onResume()
+        binding.root.requestFocus()
+    }
+
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (handleScrollKey(event.keyCode, event.action)) return true
         if (isSideButtonPtt(event.keyCode)) {
             when (event.action) {
                 KeyEvent.ACTION_DOWN -> {
@@ -177,32 +189,71 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
         return super.dispatchKeyEvent(event)
     }
 
-    override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
-        when (keyCode) {
-            KeyEvent.KEYCODE_DPAD_UP -> { binding.log.scrollByLines(-3); return true }
-            KeyEvent.KEYCODE_DPAD_DOWN -> { binding.log.scrollByLines(3); return true }
-            KeyEvent.KEYCODE_VOLUME_UP, KeyEvent.KEYCODE_VOLUME_DOWN,
-            KeyEvent.KEYCODE_BACK, KeyEvent.KEYCODE_HOME -> return super.onKeyDown(keyCode, event)
+    override fun onGenericMotionEvent(event: MotionEvent): Boolean {
+        if (event.action == MotionEvent.ACTION_SCROLL) {
+            val delta = event.getAxisValue(MotionEvent.AXIS_SCROLL)
+            if (delta != 0f) {
+                scrollTranscript(if (delta > 0) -4 else 4)
+                return true
+            }
         }
+        return super.onGenericMotionEvent(event)
+    }
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
+        if (handleScrollKey(keyCode, KeyEvent.ACTION_DOWN)) return true
         if (isSideButtonPtt(keyCode)) return true
-        if (event.repeatCount == 0) startTalking()
-        return true
+        when (keyCode) {
+            KeyEvent.KEYCODE_VOLUME_UP, KeyEvent.KEYCODE_VOLUME_DOWN,
+            KeyEvent.KEYCODE_BACK, KeyEvent.KEYCODE_HOME,
+            -> return super.onKeyDown(keyCode, event)
+        }
+        return super.onKeyDown(keyCode, event)
     }
 
     override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
-        when (keyCode) {
-            KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN,
-            KeyEvent.KEYCODE_VOLUME_UP, KeyEvent.KEYCODE_VOLUME_DOWN,
-            KeyEvent.KEYCODE_BACK, KeyEvent.KEYCODE_HOME -> return super.onKeyUp(keyCode, event)
+        if (handleScrollKey(keyCode, KeyEvent.ACTION_UP)) return true
+        if (isSideButtonPtt(keyCode)) {
+            stopTalking()
+            return true
         }
-        if (isSideButtonPtt(keyCode)) return true
-        stopTalking()
+        when (keyCode) {
+            KeyEvent.KEYCODE_VOLUME_UP, KeyEvent.KEYCODE_VOLUME_DOWN,
+            KeyEvent.KEYCODE_BACK, KeyEvent.KEYCODE_HOME,
+            -> return super.onKeyUp(keyCode, event)
+        }
+        return super.onKeyUp(keyCode, event)
+    }
+
+    /** Scroll wheel / DPAD — scroll the transcript panel, not the inner TextView. */
+    private fun handleScrollKey(keyCode: Int, action: Int): Boolean {
+        if (action != KeyEvent.ACTION_DOWN) return false
+        val lines = when (keyCode) {
+            KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_PAGE_UP,
+            KeyEvent.KEYCODE_MEDIA_REWIND,
+            -> -4
+            KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_PAGE_DOWN,
+            KeyEvent.KEYCODE_MEDIA_FAST_FORWARD,
+            -> 4
+            else -> return false
+        }
+        scrollTranscript(lines)
         return true
     }
 
-    /** Side button: KEYCODE_F1 after keylayout remap; POWER before remap (rarely reaches app). */
+    private fun scrollTranscript(lines: Int) {
+        val lineHeight = binding.log.lineHeight.coerceAtLeast(1)
+        val delta = lines * lineHeight
+        binding.transcriptScroll.smoothScrollBy(0, delta)
+    }
+
+    /** Side button after keylayout remap (116→F1); POWER rarely reaches apps on CipherOS. */
     private fun isSideButtonPtt(keyCode: Int): Boolean =
-        keyCode == KeyEvent.KEYCODE_F1 || keyCode == KeyEvent.KEYCODE_POWER
+        keyCode == KeyEvent.KEYCODE_F1 ||
+            keyCode == KeyEvent.KEYCODE_POWER ||
+            keyCode == KeyEvent.KEYCODE_CAMERA ||
+            keyCode == KeyEvent.KEYCODE_VOICE_ASSIST ||
+            keyCode == KeyEvent.KEYCODE_STEM_PRIMARY
 
     private fun requestSensorPermissions() {
         val needed = mutableListOf<String>()
@@ -640,7 +691,13 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
             showTarsPanel(skin)
         }
 
-        val updateSlider = android.widget.SeekBar.OnSeekBarChangeListener { _, _, _ -> updateTarsLabels() }
+        val updateSlider = object : android.widget.SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
+                updateTarsLabels()
+            }
+            override fun onStartTrackingTouch(seekBar: android.widget.SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: android.widget.SeekBar?) {}
+        }
         honestySeek.setOnSeekBarChangeListener(updateSlider)
         humorSeek.setOnSeekBarChangeListener(updateSlider)
         sarcasmSeek.setOnSeekBarChangeListener(updateSlider)
@@ -683,12 +740,4 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
     companion object {
         private val BUSY_STATES = setOf("thinking", "working", "speaking")
     }
-}
-
-private fun android.widget.TextView.scrollByLines(lines: Int) {
-    val lineHeight = lineHeight.coerceAtLeast(1)
-    val layout = layout ?: return
-    val maxScroll = (layout.height - height).coerceAtLeast(0)
-    val target = (scrollY + lines * lineHeight).coerceIn(0, maxScroll)
-    scrollTo(0, target)
 }

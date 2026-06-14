@@ -12,7 +12,7 @@ client for the backend brain.
 - **Streams microphone audio** (16 kHz mono PCM16) to the backend over a
   WebSocket while you hold.
 - **Plays back** the GLaDOS TTS audio that streams back.
-- **Scroll wheel** (DPAD up/down) scrolls the transcript log.
+- **Scroll wheel** (DPAD up/down) scrolls the transcript log — scrolls the `ScrollView`, not just the text field.
 - **Auto-reconnects** with backoff and **resumes** the agent across reconnects
   (the backend hands back an `agentId`, stored in `Prefs`).
 

@@ -7,7 +7,7 @@ SERIAL="${1:-}"
 ADB=(adb)
 [[ -n "$SERIAL" ]] && ADB=(adb -s "$SERIAL")
 
-OVERLAY="$ROOT/r1-flash/overlays"
+OVERLAY="$ROOT/scripts/r1-keylayout"
 KL_DIR="/data/local/tmp/r1-keylayout"
 INIT_SCRIPT="/data/local/tmp/mount-r1-ptt-kl.sh"
 PERSIST="/data/local/userinit.sh"

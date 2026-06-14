@@ -1,0 +1,4 @@
+# Rabbit R1 — mtk-kpd (side button on GPIO keypad)
+# Remap POWER (116) -> F1 so foreground apps get PTT instead of system power menu.
+key 116   F1
+key 114   VOLUME_DOWN
