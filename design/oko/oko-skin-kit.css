@@ -1,0 +1,315 @@
+/* ============================================================
+   OKO SKIN KIT  —  building blocks for Rabbit R1 AI skins
+   ------------------------------------------------------------
+   Load this file, then compose elements. Accent is driven by
+   one variable: set data-acc="amber|blue|green|red" on any
+   wrapper to retheme everything inside it.
+   Eyes accept data-state="idle|listening|thinking|speaking".
+   ============================================================ */
+
+:root{
+  --oko-acc:        oklch(0.80 0.15 70);
+  --oko-acc-soft:   color-mix(in oklab, var(--oko-acc) 16%, transparent);
+  --oko-acc-line:   color-mix(in oklab, var(--oko-acc) 45%, transparent);
+  --oko-acc-dim:    color-mix(in oklab, var(--oko-acc) 70%, #000);
+  --oko-screen:     #08090b;
+  --oko-mono:       'Share Tech Mono', ui-monospace, monospace;
+  --oko-disp:       'Space Grotesk', system-ui, sans-serif;
+  --r1-orange:      #FE5000;
+}
+[data-acc="amber"]{ --oko-acc: oklch(0.80 0.15 70); }
+[data-acc="blue"] { --oko-acc: oklch(0.72 0.14 245); }
+[data-acc="green"]{ --oko-acc: oklch(0.80 0.16 150); }
+[data-acc="red"]  { --oko-acc: oklch(0.66 0.20 25); }
+
+/* ============================================================
+   1 · GLaDOS OPTIC  —  .glados-optic
+   ============================================================ */
+.glados-optic{position:relative;width:150px;height:150px;display:flex;
+  align-items:center;justify-content:center;flex:none}
+.glados-optic > *{position:absolute}
+.go-halo{width:130px;height:130px;border-radius:50%;
+  background:radial-gradient(circle, color-mix(in oklab,var(--oko-acc) 55%,transparent) 0%,
+    color-mix(in oklab,var(--oko-acc) 12%,transparent) 45%, transparent 70%);
+  filter:blur(2px);transition:opacity .5s, transform .5s;opacity:.45}
+.go-iris{inset:0;border-radius:50%;border:2px solid color-mix(in oklab,var(--oko-acc) 40%,#5a5048);
+  box-shadow:inset 0 0 14px var(--oko-acc-soft)}
+.go-ticks{inset:6px;border-radius:50%;opacity:.8;
+  background:repeating-conic-gradient(from 0deg, var(--oko-acc-line) 0deg 1.4deg, transparent 1.4deg 9deg);
+  -webkit-mask:radial-gradient(circle, transparent 60px, #000 60px 67px, transparent 68px);
+          mask:radial-gradient(circle, transparent 60px, #000 60px 67px, transparent 68px)}
+.go-scanring{width:118px;height:118px;border-radius:50%;
+  border:2px dashed color-mix(in oklab,var(--oko-acc) 60%,transparent);opacity:0}
+.go-pulse{width:90px;height:90px;border-radius:50%;border:2px solid var(--oko-acc-line);opacity:0}
+.go-pulse.p2{animation-delay:.9s}
+.go-core{width:84px;height:84px;border-radius:50%;transition:transform .35s ease, filter .35s;
+  background:radial-gradient(circle at 46% 42%, #fff 0%, #ffe9c4 14%, var(--oko-acc) 40%,
+    var(--oko-acc-dim) 70%, color-mix(in oklab,var(--oko-acc) 35%,#000) 100%);
+  box-shadow:0 0 18px color-mix(in oklab,var(--oko-acc) 80%,transparent),
+    0 0 40px var(--oko-acc-soft), inset 0 0 16px rgba(255,240,210,.5)}
+.go-core::after{content:"";position:absolute;top:16%;left:22%;width:22px;height:14px;border-radius:50%;
+  background:radial-gradient(circle, rgba(255,255,255,.9), transparent 70%);filter:blur(1px)}
+
+/* GLaDOS states */
+.glados-optic[data-state="idle"] .go-core{animation:oko-breathe 4.2s ease-in-out infinite}
+.glados-optic[data-state="listening"] .go-core{transform:scale(1.05);filter:brightness(1.18)}
+.glados-optic[data-state="listening"] .go-halo{opacity:.85;transform:scale(1.1)}
+.glados-optic[data-state="listening"] .go-pulse{animation:oko-emit 1.8s ease-out infinite}
+.glados-optic[data-state="thinking"] .go-scanring{opacity:1;animation:oko-spin 3.2s linear infinite}
+.glados-optic[data-state="thinking"] .go-core{animation:oko-think .9s steps(2) infinite}
+.glados-optic[data-state="speaking"] .go-core{animation:oko-talk .34s ease-in-out infinite}
+.glados-optic[data-state="speaking"] .go-halo{opacity:.95}
+
+/* ============================================================
+   2 · HAL-9000 LENS  —  .hal-eye   (red sentinel camera lens)
+   ============================================================ */
+.hal-eye{position:relative;width:150px;height:150px;border-radius:50%;flex:none;
+  display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(circle at 50% 46%, #1c1c20 0%, #0c0c0e 60%, #000 100%);
+  box-shadow:inset 0 3px 8px rgba(255,255,255,.10), inset 0 -6px 14px #000,
+    0 0 0 2px #17171a, 0 8px 22px rgba(0,0,0,.6)}
+.hal-eye > *{position:absolute}
+.he-ring{width:118px;height:118px;border-radius:50%;
+  border:1px solid rgba(180,40,30,.35);box-shadow:inset 0 0 18px rgba(140,20,15,.4)}
+.he-glow{width:92px;height:92px;border-radius:50%;
+  background:radial-gradient(circle, oklch(0.62 0.22 25 / .9) 0%, oklch(0.5 0.2 25 / .5) 45%, transparent 72%);
+  filter:blur(3px);transition:opacity .5s}
+.he-lens{width:70px;height:70px;border-radius:50%;
+  background:radial-gradient(circle at 50% 48%, oklch(0.78 0.18 30) 0%, oklch(0.6 0.23 27) 38%,
+    oklch(0.4 0.21 26) 72%, oklch(0.22 0.12 25) 100%);
+  box-shadow:0 0 22px oklch(0.6 0.22 25 / .85), 0 0 50px oklch(0.55 0.2 25 / .5),
+    inset 0 0 18px rgba(0,0,0,.55)}
+.he-fovea{width:20px;height:20px;border-radius:50%;
+  background:radial-gradient(circle at 45% 42%, #fff6d8 0%, #ffd27a 40%, #d98a25 100%);
+  box-shadow:0 0 10px rgba(255,210,120,.9), 0 0 4px #fff}
+.he-spec{width:18px;height:11px;border-radius:50%;top:38px;left:46px;
+  background:radial-gradient(circle, rgba(255,255,255,.75), transparent 70%);filter:blur(1px)}
+
+.hal-eye[data-state="idle"] .he-glow{animation:oko-breathe 5s ease-in-out infinite}
+.hal-eye[data-state="listening"] .he-glow{opacity:1}
+.hal-eye[data-state="listening"] .he-fovea{animation:oko-pulse-bright 1.4s ease-in-out infinite}
+.hal-eye[data-state="thinking"] .he-fovea{animation:oko-blink .5s steps(1) infinite}
+.hal-eye[data-state="speaking"] .he-glow{animation:oko-talk .3s ease-in-out infinite}
+
+/* ============================================================
+   3 · RETICLE  —  .oko-reticle  (neutral targeting eye)
+   ============================================================ */
+.oko-reticle{position:relative;width:150px;height:150px;flex:none;
+  display:flex;align-items:center;justify-content:center}
+.oko-reticle > *{position:absolute}
+.or-ring{border-radius:50%;border:1px solid var(--oko-acc-line)}
+.or-ring.r1x{width:150px;height:150px;opacity:.4}
+.or-ring.r2x{width:104px;height:104px}
+.or-ring.r3x{width:58px;height:58px;opacity:.7}
+.or-cross,.or-cross::before{position:absolute;background:var(--oko-acc-line)}
+.or-cross{width:150px;height:1px}
+.or-cross::before{content:"";width:1px;height:150px;left:50%;top:-75px}
+.or-dot{width:10px;height:10px;border-radius:50%;background:var(--oko-acc);
+  box-shadow:0 0 10px var(--oko-acc)}
+.oko-reticle[data-state="thinking"] .r2x{animation:oko-spin 4s linear infinite}
+
+/* ============================================================
+   4 · HUD PARTS
+   ============================================================ */
+.oko-hud-top{display:flex;align-items:center;justify-content:space-between;
+  font-family:var(--oko-mono);font-size:11px;letter-spacing:.14em;color:var(--oko-acc)}
+.oko-hud-top .oko-led{width:7px;height:7px;border-radius:50%;background:var(--oko-acc);
+  box-shadow:0 0 6px var(--oko-acc);display:inline-block;margin-right:7px;
+  animation:oko-blink 2.4s steps(1) infinite}
+.oko-hud-top .right{color:color-mix(in oklab,var(--oko-acc) 70%,#888);display:flex;gap:8px;align-items:center}
+
+.oko-status{display:flex;align-items:center;justify-content:center;gap:9px;font-family:var(--oko-mono);
+  font-size:14px;letter-spacing:.34em;text-transform:uppercase;color:var(--oko-acc);
+  text-shadow:0 0 10px var(--oko-acc-soft)}
+.oko-status .sq{width:8px;height:8px;background:var(--oko-acc);box-shadow:0 0 8px var(--oko-acc)}
+
+.oko-transcript{min-height:42px;border:1px solid var(--oko-acc-line);border-radius:6px;
+  background:var(--oko-acc-soft);padding:8px 10px;font-family:var(--oko-mono);font-size:11.5px;
+  line-height:1.5;color:color-mix(in oklab,var(--oko-acc) 60%,#fff);letter-spacing:.02em;text-align:center;
+  display:flex;align-items:center;justify-content:center;text-wrap:pretty}
+.oko-caret{display:inline-block;width:7px;height:13px;background:var(--oko-acc);margin-left:3px;
+  vertical-align:-2px;animation:oko-blink2 .8s steps(1) infinite}
+
+.oko-wave{display:flex;align-items:center;justify-content:center;gap:3px;height:24px}
+.oko-wave i{width:3px;height:4px;background:var(--oko-acc-line);border-radius:2px}
+.oko-wave[data-active="1"] i{background:var(--oko-acc);box-shadow:0 0 5px var(--oko-acc-line);
+  animation:oko-vu .7s ease-in-out infinite}
+.oko-wave i:nth-child(2n){animation-delay:.12s}
+.oko-wave i:nth-child(3n){animation-delay:.24s}
+.oko-wave i:nth-child(5n){animation-delay:.32s}
+
+.oko-signal{display:inline-flex;gap:2px;align-items:flex-end;height:10px}
+.oko-signal i{width:3px;background:var(--oko-acc);display:block;opacity:.85}
+.oko-signal i:nth-child(1){height:4px}.oko-signal i:nth-child(2){height:7px}.oko-signal i:nth-child(3){height:10px}
+
+/* corner brackets — drop into any position:relative box */
+.oko-brackets > i{position:absolute;width:14px;height:14px;border:2px solid var(--oko-acc-line);z-index:5}
+.oko-brackets > i.tl{top:8px;left:8px;border-right:0;border-bottom:0}
+.oko-brackets > i.tr{top:8px;right:8px;border-left:0;border-bottom:0}
+.oko-brackets > i.bl{bottom:8px;left:8px;border-right:0;border-top:0}
+.oko-brackets > i.br{bottom:8px;right:8px;border-left:0;border-top:0}
+
+/* ============================================================
+   5 · OVERLAYS — drop into a position:relative screen box
+   ============================================================ */
+.oko-scanlines{position:absolute;inset:0;pointer-events:none;z-index:6;mix-blend-mode:multiply;
+  background:repeating-linear-gradient(0deg, transparent 0 2px, rgba(0,0,0,.22) 2px 4px)}
+.oko-grid{position:absolute;inset:0;pointer-events:none;z-index:3;opacity:.5;
+  background:linear-gradient(var(--oko-acc-soft) 1px, transparent 1px),
+    linear-gradient(90deg, var(--oko-acc-soft) 1px, transparent 1px);
+  background-size:22px 22px;
+  -webkit-mask:radial-gradient(110% 80% at 50% 45%, #000 55%, transparent 100%);
+          mask:radial-gradient(110% 80% at 50% 45%, #000 55%, transparent 100%)}
+.oko-vignette{position:absolute;inset:0;pointer-events:none;z-index:6;
+  box-shadow:inset 0 0 60px 10px rgba(0,0,0,.7)}
+
+/* ============================================================
+   6 · SCREEN  +  R1 DEVICE BODY
+   ============================================================ */
+.oko-screen{position:relative;width:240px;height:282px;border-radius:14px;overflow:hidden;
+  background:radial-gradient(120% 80% at 50% 42%, var(--oko-acc-soft), transparent 70%), var(--oko-screen);
+  font-family:var(--oko-mono);color:var(--oko-acc)}
+
+.r1-device{position:relative;width:430px;height:430px;border-radius:54px;padding:30px;
+  display:grid;grid-template-columns:1fr 78px;gap:22px;
+  background:linear-gradient(160deg, color-mix(in oklab,var(--r1-orange) 88%,#fff) 0%,
+    var(--r1-orange) 38%, color-mix(in oklab,var(--r1-orange) 78%,#000) 100%);
+  box-shadow:inset 0 2px 3px rgba(255,255,255,.45), inset 0 -8px 22px rgba(120,28,0,.55),
+    0 30px 70px -20px rgba(0,0,0,.8)}
+.r1-device::after{content:"";position:absolute;inset:10px;border-radius:46px;
+  border:1px solid rgba(255,255,255,.10);pointer-events:none}
+.r1-screen-wrap{position:relative;border-radius:22px;background:#000;padding:10px;
+  box-shadow:inset 0 0 0 2px rgba(0,0,0,.6),0 6px 16px rgba(0,0,0,.5);
+  display:flex;align-items:center;justify-content:center}
+.r1-right{display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:6px 0}
+.r1-cam{width:62px;height:62px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(circle at 38% 34%, #2a2a2e 0%, #111 55%, #000 100%);
+  box-shadow:inset 0 2px 4px rgba(255,255,255,.18), inset 0 -3px 6px #000, 0 3px 8px rgba(0,0,0,.5)}
+.r1-cam::after{content:"";width:20px;height:20px;border-radius:50%;
+  background:radial-gradient(circle at 40% 38%, #4a4d55 0%, #0a0a0c 70%)}
+.r1-wheel{width:70px;height:150px;border-radius:36px;
+  background:repeating-linear-gradient(0deg, rgba(0,0,0,.16) 0 5px, rgba(255,255,255,.05) 5px 10px),
+    linear-gradient(90deg, color-mix(in oklab,var(--r1-orange) 70%,#000),
+      color-mix(in oklab,var(--r1-orange) 92%,#fff) 50%, color-mix(in oklab,var(--r1-orange) 70%,#000));
+  box-shadow:inset 0 2px 4px rgba(255,255,255,.35), inset 0 -6px 12px rgba(120,28,0,.6), 0 3px 8px rgba(0,0,0,.4)}
+
+/* ============================================================
+   KEYFRAMES
+   ============================================================ */
+@keyframes oko-breathe{0%,100%{transform:scale(.93);filter:brightness(.8)}50%{transform:scale(1);filter:brightness(1)}}
+@keyframes oko-emit{0%{opacity:.7;transform:scale(.7)}100%{opacity:0;transform:scale(1.9)}}
+@keyframes oko-spin{to{transform:rotate(360deg)}}
+@keyframes oko-think{0%,100%{filter:brightness(.9)}50%{filter:brightness(1.25)}}
+@keyframes oko-talk{0%,100%{transform:scale(1);filter:brightness(1.05)}50%{transform:scale(1.14);filter:brightness(1.3)}}
+@keyframes oko-pulse-bright{0%,100%{filter:brightness(.85)}50%{filter:brightness(1.4)}}
+@keyframes oko-blink{0%,82%{opacity:1}83%,100%{opacity:.25}}
+@keyframes oko-blink2{0%,50%{opacity:1}51%,100%{opacity:0}}
+@keyframes oko-vu{0%,100%{height:4px}50%{height:20px}}
+
+@media (prefers-reduced-motion: reduce){
+  .glados-optic *,.hal-eye *,.oko-reticle *,.oko-led,.oko-caret,.oko-wave i{animation:none !important}
+}
+
+/* ============================================================
+   7 · GLaDOS HEAD  —  .glados-head  (suspended chassis, game form)
+   ============================================================ */
+.glados-head{position:relative;width:132px;height:158px;flex:none;transform-origin:50% 6%}
+.glados-head > *{position:absolute}
+.gh-arm{top:0;left:calc(50% - 13px);width:26px;height:58px;border-radius:5px;
+  background:linear-gradient(90deg,#5f636a,#c6cace 46%,#5f636a);
+  box-shadow:inset 0 0 6px rgba(0,0,0,.45)}
+.gh-arm::before{content:"";position:absolute;inset:0;border-radius:5px;
+  background:repeating-linear-gradient(0deg, transparent 0 9px, rgba(0,0,0,.4) 9px 11px)}
+.gh-shell{top:42px;left:calc(50% - 53px);width:106px;height:114px;
+  background:linear-gradient(180deg,#edeae3 0%, #d3d0c8 38%, #a7a49d 78%, #87847d 100%);
+  border-radius:52% 52% 44% 44% / 58% 58% 86% 86%;
+  box-shadow:inset 0 4px 8px rgba(255,255,255,.65), inset 0 -10px 18px rgba(0,0,0,.35),
+    0 9px 18px rgba(0,0,0,.45);
+  display:flex;align-items:flex-end;justify-content:center;padding-bottom:13px}
+.gh-shell::before{content:"";position:absolute;top:30%;left:9%;right:9%;height:1px;
+  background:rgba(0,0,0,.2);box-shadow:0 24px 0 rgba(0,0,0,.16), 0 -16px 0 rgba(0,0,0,.12)}
+.gh-shell::after{content:"";position:absolute;bottom:9px;left:calc(50% - 30px);width:60px;height:60px;
+  border-radius:50%;border:3px solid #36342f;box-shadow:inset 0 0 8px rgba(0,0,0,.5)}
+.gh-eye{position:relative;z-index:2;width:46px;height:46px;border-radius:50%;
+  transition:transform .35s, filter .35s;
+  background:radial-gradient(circle at 46% 42%, #fff 0%, #ffe9c4 14%, var(--oko-acc) 42%,
+    var(--oko-acc-dim) 72%, color-mix(in oklab,var(--oko-acc) 30%,#000) 100%);
+  box-shadow:0 0 14px var(--oko-acc), 0 0 30px var(--oko-acc-soft), inset 0 0 10px rgba(0,0,0,.35)}
+.glados-head[data-state="idle"]{animation:oko-bob 5s ease-in-out infinite}
+.glados-head[data-state="listening"] .gh-eye{filter:brightness(1.22);transform:scale(1.06)}
+.glados-head[data-state="thinking"]{animation:oko-tilt 2.6s ease-in-out infinite}
+.glados-head[data-state="speaking"] .gh-eye{animation:oko-talk .34s ease-in-out infinite}
+
+/* ============================================================
+   8 · PotatOS  —  .glados-potato  (potato body + Aperture clips)
+   ============================================================ */
+.glados-potato{position:relative;width:152px;height:138px;flex:none;
+  display:flex;align-items:center;justify-content:center}
+.glados-potato > *{position:absolute}
+.gp-body{width:136px;height:108px;
+  border-radius:62% 56% 58% 64% / 66% 62% 60% 58%;
+  background:radial-gradient(42% 50% at 32% 28%, #c99c64 0%, transparent 60%),
+    radial-gradient(52% 60% at 72% 74%, #5f4222 0%, transparent 72%),
+    linear-gradient(160deg,#b88a52,#7d5a30);
+  box-shadow:inset 0 6px 12px rgba(255,232,192,.4), inset 0 -10px 18px rgba(40,24,8,.6),
+    0 8px 18px rgba(0,0,0,.5)}
+.gp-body::before{content:"";position:absolute;inset:0;border-radius:inherit;
+  background:radial-gradient(circle at 22% 66%, rgba(40,24,8,.55) 0 3px, transparent 4px),
+    radial-gradient(circle at 80% 36%, rgba(40,24,8,.5) 0 2px, transparent 3px),
+    radial-gradient(circle at 62% 82%, rgba(40,24,8,.45) 0 2px, transparent 3px),
+    radial-gradient(circle at 40% 22%, rgba(40,24,8,.4) 0 2px, transparent 3px)}
+.gp-eye{position:relative;z-index:2;width:56px;height:56px;border-radius:50%;
+  transition:transform .35s, filter .35s;
+  background:radial-gradient(circle at 46% 42%, #fff 0%, #ffe9c4 14%, var(--oko-acc) 42%,
+    var(--oko-acc-dim) 72%, color-mix(in oklab,var(--oko-acc) 30%,#000) 100%);
+  box-shadow:0 0 16px var(--oko-acc), 0 0 34px var(--oko-acc-soft), inset 0 0 12px rgba(0,0,0,.4);
+  border:3px solid #3a2c18}
+.gp-clip{top:-2px;width:14px;height:24px;border-radius:3px;z-index:3;
+  background:linear-gradient(#d3d7dc,#7c8086);box-shadow:inset 0 0 3px rgba(0,0,0,.45)}
+.gp-clip::before{content:"";position:absolute;top:-42px;left:6px;width:2px;height:46px;background:#3a3d42}
+.gp-clip::after{content:"";position:absolute;bottom:-3px;left:2px;width:10px;height:5px;
+  background:repeating-linear-gradient(90deg,#9aa0a6 0 2px,#5f6368 2px 3px)}
+.gp-clip.l{left:38px;transform:rotate(-13deg)}
+.gp-clip.r{right:38px;transform:rotate(13deg)}
+.glados-potato[data-state="idle"] .gp-eye{animation:oko-breathe 4.2s ease-in-out infinite}
+.glados-potato[data-state="listening"] .gp-eye{filter:brightness(1.2);transform:scale(1.04)}
+.glados-potato[data-state="thinking"] .gp-eye{animation:oko-think .9s steps(2) infinite}
+.glados-potato[data-state="speaking"] .gp-eye{animation:oko-talk .34s ease-in-out infinite}
+
+/* ============================================================
+   9 · TARS  —  .tars-bot  (Interstellar-style monolith, NOT round)
+   ============================================================ */
+.tars-bot{position:relative;display:flex;gap:3px;width:114px;height:158px;flex:none}
+.tars-seg{flex:1;border-radius:4px;position:relative;
+  background:linear-gradient(90deg,#16181b 0%, #353b42 20%, #262b31 52%, #111316 100%);
+  background-image:repeating-linear-gradient(90deg, rgba(255,255,255,.045) 0 1px, transparent 1px 3px);
+  box-shadow:inset 0 1px 1px rgba(255,255,255,.14), inset 0 -3px 6px rgba(0,0,0,.6),
+    0 6px 14px rgba(0,0,0,.5)}
+.tars-seg::after{content:"";position:absolute;left:0;right:0;bottom:14%;height:1px;background:rgba(0,0,0,.5)}
+.tars-screen{position:absolute;z-index:4;top:24px;left:50%;transform:translateX(-50%);
+  width:82px;height:30px;border-radius:3px;background:#04060a;
+  border:1px solid rgba(255,255,255,.08);box-shadow:0 0 0 2px rgba(0,0,0,.55), 0 2px 6px rgba(0,0,0,.6);
+  display:flex;align-items:center;justify-content:center;gap:4px}
+.tars-screen i{width:5px;height:5px;border-radius:1px;background:var(--oko-acc-line);transition:.2s}
+.tars-bot[data-state="idle"] .tars-screen i:nth-child(3){background:var(--oko-acc);
+  box-shadow:0 0 6px var(--oko-acc);animation:oko-pulse-bright 2.4s ease-in-out infinite}
+.tars-bot[data-state="listening"] .tars-screen i,
+.tars-bot[data-state="speaking"] .tars-screen i{background:var(--oko-acc);
+  box-shadow:0 0 6px var(--oko-acc);animation:oko-vu-dot .62s ease-in-out infinite}
+.tars-bot[data-state="thinking"] .tars-screen i{background:var(--oko-acc);opacity:.7;
+  animation:oko-blink .5s steps(1) infinite}
+.tars-screen i:nth-child(2){animation-delay:.1s}.tars-screen i:nth-child(3){animation-delay:.2s}
+.tars-screen i:nth-child(4){animation-delay:.3s}.tars-screen i:nth-child(5){animation-delay:.15s}
+.tars-bot[data-state="thinking"] .tars-seg{animation:oko-tars-step 1.5s ease-in-out infinite}
+.tars-bot[data-state="thinking"] .tars-seg:nth-child(2){animation-delay:.18s}
+.tars-bot[data-state="thinking"] .tars-seg:nth-child(3){animation-delay:.36s}
+.tars-bot[data-state="thinking"] .tars-seg:nth-child(4){animation-delay:.54s}
+
+@keyframes oko-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(5px)}}
+@keyframes oko-tilt{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+@keyframes oko-vu-dot{0%,100%{transform:scaleY(.5)}50%{transform:scaleY(2.2)}}
+@keyframes oko-tars-step{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+
+@media (prefers-reduced-motion: reduce){
+  .glados-head,.glados-head *,.glados-potato *,.tars-bot,.tars-seg,.tars-screen i{animation:none !important}
+}

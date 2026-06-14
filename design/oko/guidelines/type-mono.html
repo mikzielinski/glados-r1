@@ -1,0 +1,17 @@
+<!-- @dsCard group="Type" viewport="700x230" name="Mono — data & telemetry" subtitle="Space Mono — the machine reporting on itself" -->
+<!DOCTYPE html>
+<html lang="pl"><head><meta charset="UTF-8"><link rel="stylesheet" href="../styles.css">
+<style>
+  html,body{margin:0;background:var(--bg);color:var(--text-primary);font-family:var(--font-mono);}
+  .wrap{padding:22px 26px;display:flex;flex-direction:column;gap:16px;}
+  .tag{font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:.04em;}
+  .read{font-size:18px;letter-spacing:.04em;color:var(--clinical-100);}
+  .read .v{color:var(--red-core);}
+  .small{font-size:13px;letter-spacing:.04em;color:var(--text-secondary);line-height:1.7;}
+</style></head>
+<body><div class="wrap">
+  <div><div class="tag">readout · 18 mono</div>
+    <div class="read">14:02:51 · CPU <span class="v">12%</span> · BAT 82% · LTE</div></div>
+  <div><div class="tag">log · 13 mono</div>
+    <div class="small">[14:02] ZADANIE: zamów kawę → wykonano (1.2s)<br>[14:03] CZUJNIK: kalendarz → 1 zdarzenie<br>[14:03] OSTRZEŻENIE: niski poziom snu</div></div>
+</div></body></html>

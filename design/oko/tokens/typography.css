@@ -1,0 +1,43 @@
+/* OKO — Typography tokens
+   Two voices: a grotesque (Space Grotesk) for UI & headings — clean, slightly uncanny,
+   clinical lab-signage feel; and a monospace (Space Mono) for DATA — timestamps,
+   telemetry, system labels, the agent's "machine" readouts. The mono is what makes
+   it read as an instrument. Labels are UPPERCASE with wide tracking (GLaDOS panel
+   labels). Body stays sentence-case grotesque. */
+
+:root {
+  /* families */
+  --font-grotesk: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Space Mono', 'JetBrains Mono', ui-monospace, monospace;
+
+  /* roles */
+  --font-display: var(--font-grotesk);
+  --font-ui:      var(--font-grotesk);
+  --font-data:    var(--font-mono);
+
+  /* scale (R1 is a small screen — UI sizes run compact) */
+  --fs-display: 44px;
+  --fs-h1: 30px;
+  --fs-h2: 22px;
+  --fs-h3: 17px;
+  --fs-body: 15px;
+  --fs-sm: 13px;
+  --fs-xs: 11px;
+  --fs-label: 10.5px;  /* clinical micro-labels */
+
+  /* line heights */
+  --lh-tight: 1.04; /* @kind font */
+  --lh-snug: 1.22;  /* @kind font */
+  --lh-body: 1.5;   /* @kind font */
+
+  /* tracking */
+  --track-label: 0.2em;    /* uppercase clinical labels @kind font */
+  --track-data: 0.04em;    /* mono readouts @kind font */
+  --track-wide: 0.06em;    /* @kind font */
+  --track-tight: -0.015em; /* large display @kind font */
+
+  /* weights */
+  --fw-regular: 400; /* @kind font */
+  --fw-medium: 500;  /* @kind font */
+  --fw-bold: 700;    /* @kind font */
+}

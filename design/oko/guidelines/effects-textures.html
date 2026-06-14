@@ -1,0 +1,19 @@
+<!-- @dsCard group="Spacing" viewport="700x200" name="Screen textures" subtitle="CRT scanlines, faint grid, inset well — applied as overlays" -->
+<!DOCTYPE html>
+<html lang="pl"><head><meta charset="UTF-8"><link rel="stylesheet" href="../styles.css">
+<style>
+  html,body{margin:0;background:var(--bg);color:var(--text-primary);font-family:var(--font-ui);}
+  .wrap{padding:24px 26px;display:flex;gap:18px;}
+  .item{flex:1;display:flex;flex-direction:column;gap:10px;}
+  .demo{height:104px;border-radius:8px;border:1px solid var(--border);background:var(--void-700);position:relative;overflow:hidden;}
+  .scan::after{content:'';position:absolute;inset:0;background-image:var(--scanlines);}
+  .grid::after{content:'';position:absolute;inset:0;background-image:var(--grid-faint);background-size:18px 18px;}
+  .well{box-shadow:var(--inset-screen);}
+  .well::after{content:'';position:absolute;inset:0;background:var(--vignette);}
+  .tag{font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:.04em;}
+</style></head>
+<body><div class="wrap">
+  <div class="item"><div class="demo scan"></div><span class="tag">--scanlines</span></div>
+  <div class="item"><div class="demo grid"></div><span class="tag">--grid-faint</span></div>
+  <div class="item"><div class="demo well"></div><span class="tag">--inset-screen + --vignette</span></div>
+</div></body></html>

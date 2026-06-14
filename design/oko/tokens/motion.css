@@ -1,0 +1,33 @@
+/* OKO — Motion
+   HAL moves slowly and deliberately; nothing snaps. The lens BREATHES on a long,
+   calm cycle (it is always alive, never idle-dead). Transitions are eased and
+   unhurried; the system never bounces (a bounce would be too playful for a machine
+   that may or may not have your best interests at heart). */
+
+:root {
+  /* easing — calm; nothing bounces */
+  --ease-hal: cubic-bezier(0.4, 0.0, 0.2, 1);     /* @kind other */
+  --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1); /* @kind other */
+  --ease-in-soft: cubic-bezier(0.5, 0, 0.75, 0);  /* @kind other */
+  --ease-linear: linear;                          /* @kind other */
+
+  /* durations */
+  --dur-instant: 80ms;  /* @kind other */
+  --dur-fast: 140ms;    /* @kind other */
+  --dur-base: 260ms;    /* @kind other */
+  --dur-slow: 480ms;    /* @kind other */
+  --dur-deliberate: 800ms; /* @kind other */
+
+  /* signature rhythms — lens breath, listening pulse, scanline drift */
+  --breath: 4200ms;   /* @kind other */
+  --pulse: 1100ms;    /* @kind other */
+  --scan: 6000ms;     /* @kind other */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --breath: 0ms; /* @kind other */
+    --pulse: 0ms;  /* @kind other */
+    --scan: 0ms;   /* @kind other */
+  }
+}

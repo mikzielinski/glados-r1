@@ -1,0 +1,36 @@
+{
+  "skills": [
+    {
+      "name": "office_lights",
+      "description": "Turn the office lights on or off. Use when the developer asks about lights.",
+      "webhook": "webhook/office-lights",
+      "method": "POST",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "state": { "type": "string", "enum": ["on", "off"], "description": "Desired light state" }
+        },
+        "required": ["state"]
+      }
+    },
+    {
+      "name": "send_notification",
+      "description": "Send a push/Slack notification with a short message.",
+      "webhook": "webhook/notify",
+      "method": "POST",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string", "description": "The message to send" }
+        },
+        "required": ["message"]
+      }
+    },
+    {
+      "name": "todays_calendar",
+      "description": "Fetch today's calendar events for the developer.",
+      "webhook": "webhook/calendar-today",
+      "method": "GET"
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- OKO design tokens (from design/oko/tokens/colors.css) -->
+    <color name="void_900">#040405</color>
+    <color name="void_800">#08090B</color>
+    <color name="void_700">#0D0E11</color>
+    <color name="panel_800">#15171C</color>
+    <color name="panel_700">#1C1F25</color>
+
+    <color name="red_core">#FF3A24</color>
+    <color name="red_500">#E2122A</color>
+    <color name="red_600">#C20D22</color>
+    <color name="red_glow">#8CE2122A</color>
+
+    <color name="clinical_50">#F6F6F3</color>
+    <color name="clinical_100">#E8E8E3</color>
+    <color name="clinical_300">#B6B8B3</color>
+    <color name="clinical_500">#7E817B</color>
+    <color name="clinical_700">#4A4D49</color>
+
+    <color name="status_ok">#43D27E</color>
+    <color name="status_warn">#F4B32A</color>
+    <color name="status_info">#5BC8D8</color>
+
+    <color name="line_1">#14F4F4F2</color>
+    <color name="line_2">#24F4F4F2</color>
+
+    <color name="amber_500">#D4881A</color>
+    <color name="tars_500">#5A9BB8</color>
+
+    <!-- Legacy aliases used in code -->
+    <color name="glados_bg">@color/void_800</color>
+    <color name="glados_panel">@color/panel_800</color>
+    <color name="glados_text">@color/clinical_50</color>
+    <color name="glados_dim">@color/clinical_500</color>
+    <color name="glados_accent">@color/red_500</color>
+</resources>

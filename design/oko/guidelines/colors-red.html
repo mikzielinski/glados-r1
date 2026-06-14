@@ -1,0 +1,26 @@
+<!-- @dsCard group="Colors" viewport="700x230" name="HAL Red — the lens" subtitle="The one true accent. Rationed: red means OKO is present." -->
+<!DOCTYPE html>
+<html lang="pl"><head><meta charset="UTF-8"><link rel="stylesheet" href="../styles.css">
+<style>
+  html,body{margin:0;background:var(--bg);color:var(--text-primary);font-family:var(--font-ui);}
+  .wrap{padding:22px 24px;display:flex;align-items:center;gap:26px;}
+  .ramp{display:flex;gap:0;border-radius:8px;overflow:hidden;border:1px solid var(--border);flex:1;}
+  .sw{flex:1;height:96px;display:flex;align-items:flex-end;padding:8px 9px;}
+  .meta{font-family:var(--font-mono);font-size:9.5px;line-height:1.5;}
+  .meta b{display:block;font-weight:400;}
+  .lens{width:96px;height:96px;border-radius:50%;background:var(--lens-gradient);box-shadow:var(--glow-md);flex:0 0 auto;}
+  .lcap{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-muted);text-align:center;margin-top:8px;}
+</style></head>
+<body><div class="wrap">
+  <div>
+    <div class="lens"></div>
+    <div class="lcap">--lens-gradient</div>
+  </div>
+  <div class="ramp">
+    <div class="sw" style="background:var(--red-core);color:#3a0006"><div class="meta"><b>red-core</b>#ff3a24</div></div>
+    <div class="sw" style="background:var(--red-500);color:#fff"><div class="meta"><b>red-500 ★</b>#e2122a</div></div>
+    <div class="sw" style="background:var(--red-600);color:#fff"><div class="meta"><b>red-600</b>#c20d22</div></div>
+    <div class="sw" style="background:var(--red-700);color:#fff"><div class="meta"><b>red-700</b>#8f0816</div></div>
+    <div class="sw" style="background:var(--red-900);color:#e8a"><div class="meta"><b>red-900</b>#45040b</div></div>
+  </div>
+</div></body></html>

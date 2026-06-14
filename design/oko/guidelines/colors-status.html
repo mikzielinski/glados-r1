@@ -1,0 +1,18 @@
+<!-- @dsCard group="Colors" viewport="700x170" name="Status palette" subtitle="Secondary monitors: ok / warn / danger / info" -->
+<!DOCTYPE html>
+<html lang="pl"><head><meta charset="UTF-8"><link rel="stylesheet" href="../styles.css">
+<style>
+  html,body{margin:0;background:var(--bg);color:var(--text-primary);font-family:var(--font-ui);}
+  .wrap{padding:22px 24px;display:flex;gap:14px;}
+  .chip{flex:1;border:1px solid var(--border);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:10px;background:var(--surface-card);}
+  .dot{width:14px;height:14px;border-radius:50%;box-shadow:0 0 8px currentColor;}
+  .nm{font-family:var(--font-mono);font-size:10px;letter-spacing:.04em;}
+  .nm b{display:block;color:var(--text-secondary);font-weight:400;}
+  .nm span{color:var(--text-muted);}
+</style></head>
+<body><div class="wrap">
+  <div class="chip"><div class="dot" style="background:var(--status-ok);color:var(--status-ok)"></div><div class="nm"><b>ok-400</b><span>#43d27e · nominalne</span></div></div>
+  <div class="chip"><div class="dot" style="background:var(--status-warn);color:var(--status-warn)"></div><div class="nm"><b>amber-400</b><span>#f4b32a · uwaga</span></div></div>
+  <div class="chip"><div class="dot" style="background:var(--status-danger);color:var(--status-danger)"></div><div class="nm"><b>red-500</b><span>#e2122a · błąd</span></div></div>
+  <div class="chip"><div class="dot" style="background:var(--status-info);color:var(--status-info)"></div><div class="nm"><b>info-400</b><span>#5bc8d8 · info</span></div></div>
+</div></body></html>

@@ -1,0 +1,28 @@
+{
+  "name": "glados-r1-backend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "GLaDOS R1 backend brain: WebSocket server + local STT/TTS + Cursor SDK agent",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "node --experimental-strip-types src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "tsx scripts/test-intent.ts && tsx scripts/test-device-router.ts && tsx scripts/test-chat-router.ts && tsx scripts/test-spoken-polish.ts && tsx scripts/test-skills.ts"
+  },
+  "dependencies": {
+    "@cursor/sdk": "^1.0.18",
+    "dotenv": "^17.4.2",
+    "ws": "^8.21.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.3",
+    "@types/ws": "^8.18.1",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3"
+  }
+}

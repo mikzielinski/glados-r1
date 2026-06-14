@@ -1,0 +1,18 @@
+<!-- @dsCard group="Spacing" viewport="700x210" name="Glow & shadow" subtitle="Light emits only from the red. Panels cast deep matte shadow." -->
+<!DOCTYPE html>
+<html lang="pl"><head><meta charset="UTF-8"><link rel="stylesheet" href="../styles.css">
+<style>
+  html,body{margin:0;background:var(--bg);color:var(--text-primary);font-family:var(--font-ui);}
+  .wrap{padding:30px 26px;display:flex;gap:30px;align-items:center;flex-wrap:wrap;}
+  .item{display:flex;flex-direction:column;align-items:center;gap:12px;}
+  .dot{width:60px;height:60px;border-radius:50%;background:var(--red-500);}
+  .panel{width:90px;height:60px;border-radius:8px;background:var(--surface-card);border:1px solid var(--border);}
+  .tag{font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:.04em;}
+</style></head>
+<body><div class="wrap">
+  <div class="item"><div class="dot" style="box-shadow:var(--glow-sm)"></div><span class="tag">glow-sm</span></div>
+  <div class="item"><div class="dot" style="box-shadow:var(--glow-md)"></div><span class="tag">glow-md</span></div>
+  <div class="item"><div class="dot" style="box-shadow:var(--glow-lg)"></div><span class="tag">glow-lg</span></div>
+  <div class="item"><div class="panel" style="box-shadow:var(--shadow-panel)"></div><span class="tag">shadow-panel</span></div>
+  <div class="item"><div class="panel" style="box-shadow:var(--shadow-raised)"></div><span class="tag">shadow-raised</span></div>
+</div></body></html>

@@ -1,0 +1,41 @@
+/* OKO — Effects: shadows, glows, the lens gradient, glass & CRT textures.
+   The look: deep matte void, hairline-etched panels, and ONE thing that emits light —
+   the lens. Glow belongs only to the red. Screens have an inset vignette (CRT well).
+   Scanlines + grain are optional overlays applied via the utility gradients below. */
+
+:root {
+  /* drop shadows (deep, soft, near-black) */
+  --shadow-panel: 0 1px 0 rgba(255,255,255,0.04) inset, 0 10px 30px rgba(0,0,0,0.55);
+  --shadow-raised: 0 18px 50px rgba(0,0,0,0.7);
+  --shadow-pop: 0 24px 70px rgba(0,0,0,0.8);
+
+  /* red glows — emission only on the lens / active accent */
+  --glow-sm: 0 0 8px var(--red-glow);
+  --glow-md: 0 0 18px var(--red-glow), 0 0 44px rgba(226,18,42,0.22);
+  --glow-lg: 0 0 30px var(--red-glow), 0 0 90px rgba(226,18,42,0.28);
+  --text-glow: 0 0 12px rgba(226,18,42,0.55);
+
+  /* CRT / screen well vignette */
+  --inset-screen: inset 0 0 90px rgba(0,0,0,0.85), inset 0 0 14px rgba(0,0,0,0.6);
+
+  /* THE LENS — radial gradient of the HAL/OKO eye */
+  --lens-gradient: radial-gradient(circle at 50% 42%,
+      #ffb199 0%, #ff5a3c 12%, #ff3a24 24%, #e2122a 42%,
+      #8f0816 66%, #45040b 84%, #1a0204 100%); /* @kind color */
+  --lens-gradient-dim: radial-gradient(circle at 50% 42%,
+      #6e2018 0%, #5a1018 30%, #3a0810 60%, #1a0306 100%); /* @kind color */
+
+  /* glass panel (blur surface) */
+  --glass-bg: rgba(18,20,25,0.62);            /* @kind color */
+  --glass-border: rgba(244,244,242,0.10);     /* @kind color */
+  --blur-glass: blur(14px) saturate(110%);    /* @kind other */
+  --blur-soft: blur(8px);                     /* @kind other */
+
+  /* overlays (apply as background-image on an absolutely-positioned layer) */
+  --scanlines: repeating-linear-gradient(
+      to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 2px,
+      rgba(0,0,0,0.16) 3px, rgba(0,0,0,0) 4px);            /* @kind other */
+  --grid-faint: linear-gradient(rgba(244,244,242,0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(244,244,242,0.04) 1px, transparent 1px); /* @kind other */
+  --vignette: radial-gradient(120% 120% at 50% 30%, transparent 55%, rgba(0,0,0,0.6) 100%); /* @kind other */
+}

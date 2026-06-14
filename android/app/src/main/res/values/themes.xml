@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.GladosR1" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:statusBarColor">@color/void_900</item>
+        <item name="android:navigationBarColor">@color/void_900</item>
+        <item name="android:colorBackground">@color/void_800</item>
+        <item name="colorPrimary">@color/red_500</item>
+        <item name="colorOnPrimary">@color/clinical_50</item>
+    </style>
+</resources>

@@ -1,0 +1,29 @@
+<svg width="240" height="240" viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="OKO lens mark">
+  <defs>
+    <radialGradient id="oko-lens" cx="50%" cy="42%" r="62%">
+      <stop offset="0%" stop-color="#ffb199"></stop>
+      <stop offset="12%" stop-color="#ff5a3c"></stop>
+      <stop offset="24%" stop-color="#ff3a24"></stop>
+      <stop offset="42%" stop-color="#e2122a"></stop>
+      <stop offset="66%" stop-color="#8f0816"></stop>
+      <stop offset="84%" stop-color="#45040b"></stop>
+      <stop offset="100%" stop-color="#1a0204"></stop>
+    </radialGradient>
+    <radialGradient id="oko-core" cx="50%" cy="44%" r="50%">
+      <stop offset="0%" stop-color="#fff4ef"></stop>
+      <stop offset="40%" stop-color="#ff6a4d"></stop>
+      <stop offset="100%" stop-color="#ff3a24" stop-opacity="0"></stop>
+    </radialGradient>
+  </defs>
+  
+  <circle cx="120" cy="120" r="118" fill="#08090b"></circle>
+  <circle cx="120" cy="120" r="118" stroke="#1c1f25" stroke-width="2"></circle>
+  <circle cx="120" cy="120" r="100" fill="#040405" stroke="#15171c" stroke-width="1.5"></circle>
+  
+  <circle cx="120" cy="120" r="78" fill="url(#oko-lens)"></circle>
+  
+  <circle cx="120" cy="116" r="34" fill="url(#oko-core)"></circle>
+  <circle cx="120" cy="114" r="11" fill="#fff4ef"></circle>
+  
+  <circle cx="108" cy="100" r="6" fill="#ffffff" fill-opacity="0.55"></circle>
+</svg>

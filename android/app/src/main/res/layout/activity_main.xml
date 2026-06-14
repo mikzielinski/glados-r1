@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clipToPadding="false"
+    tools:context=".MainActivity">
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/bg_oko_screen" />
+
+    <tech.glados.r1.ui.OkoOverlayView
+        android:id="@+id/screenOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <LinearLayout
+        android:id="@+id/contentColumn"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <!-- oko-hud-top: LED + brand + state | SET -->
+        <LinearLayout
+            android:id="@+id/systemBar"
+            android:layout_width="match_parent"
+            android:layout_height="26dp"
+            android:background="@drawable/bg_hud_top"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="10dp"
+            android:paddingEnd="8dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <View
+                    android:id="@+id/sysbarDot"
+                    android:layout_width="7dp"
+                    android:layout_height="7dp"
+                    android:background="@drawable/sysbar_dot_active" />
+
+                <TextView
+                    android:id="@+id/brandLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="7dp"
+                    android:ellipsize="end"
+                    android:fontFamily="monospace"
+                    android:letterSpacing="0.14"
+                    android:maxLines="1"
+                    android:text="@string/oko_brand"
+                    android:textAllCaps="true"
+                    android:textColor="@color/red_500"
+                    android:textSize="10sp" />
+
+                <TextView
+                    android:id="@+id/sysbarState"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:fontFamily="monospace"
+                    android:letterSpacing="0.12"
+                    android:maxLines="1"
+                    android:text="@string/state_ready"
+                    android:textAllCaps="true"
+                    android:textColor="@color/clinical_300"
+                    android:textSize="10sp" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/settingsButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_settings_chip"
+                android:clickable="true"
+                android:focusable="true"
+                android:fontFamily="monospace"
+                android:letterSpacing="0.14"
+                android:minWidth="36dp"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp"
+                android:text="@string/settings_button"
+                android:textAllCaps="true"
+                android:textColor="@color/clinical_300"
+                android:textSize="9sp" />
+        </LinearLayout>
+
+        <!-- Hero lens — hold to talk (PTT), long-press for photo -->
+        <FrameLayout
+            android:id="@+id/lensHero"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1.05"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:paddingTop="2dp"
+            android:paddingBottom="2dp">
+
+            <tech.glados.r1.ui.LensView
+                android:id="@+id/lens"
+                android:layout_width="128dp"
+                android:layout_height="128dp"
+                android:layout_gravity="center"
+                android:clickable="true"
+                android:contentDescription="@string/ptt_idle"
+                android:focusable="true" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:paddingHorizontal="16dp">
+
+            <View
+                android:id="@+id/statusSquare"
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:background="@drawable/status_square" />
+
+            <TextView
+                android:id="@+id/status"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="9dp"
+                android:ellipsize="end"
+                android:fontFamily="monospace"
+                android:letterSpacing="0.34"
+                android:maxLines="1"
+                android:text="@string/status_connecting"
+                android:textAllCaps="true"
+                android:textColor="@color/red_500"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <tech.glados.r1.ui.WaveformView
+            android:id="@+id/waveform"
+            android:layout_width="match_parent"
+            android:layout_height="20dp"
+            android:layout_marginTop="6dp"
+            android:paddingHorizontal="24dp" />
+
+        <TextView
+            android:id="@+id/hint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="monospace"
+            android:gravity="center"
+            android:letterSpacing="0.04"
+            android:paddingHorizontal="16dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="6dp"
+            android:text="@string/hint_ptt"
+            android:textAllCaps="true"
+            android:textColor="@color/clinical_500"
+            android:textSize="9sp" />
+
+        <FrameLayout
+            android:id="@+id/transcriptFrame"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_marginHorizontal="12dp"
+            android:layout_marginBottom="10dp"
+            android:layout_weight="1.35"
+            android:background="@drawable/bg_transcript_oko"
+            android:padding="10dp">
+
+            <View
+                android:layout_width="14dp"
+                android:layout_height="14dp"
+                android:layout_gravity="top|start"
+                android:background="@drawable/bracket_tl" />
+
+            <View
+                android:layout_width="14dp"
+                android:layout_height="14dp"
+                android:layout_gravity="top|end"
+                android:background="@drawable/bracket_tr" />
+
+            <View
+                android:layout_width="14dp"
+                android:layout_height="14dp"
+                android:layout_gravity="bottom|start"
+                android:background="@drawable/bracket_bl" />
+
+            <View
+                android:layout_width="14dp"
+                android:layout_height="14dp"
+                android:layout_gravity="bottom|end"
+                android:background="@drawable/bracket_br" />
+
+            <ScrollView
+                android:id="@+id/transcriptScroll"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:fillViewport="true">
+
+                <TextView
+                    android:id="@+id/log"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:gravity="center_horizontal"
+                    android:letterSpacing="0.02"
+                    android:lineSpacingExtra="4dp"
+                    android:textColor="@color/clinical_100"
+                    android:textIsSelectable="true"
+                    android:textSize="11sp"
+                    tools:text="OKO: Connected." />
+            </ScrollView>
+        </FrameLayout>
+
+        <!-- backend host hidden from HUD — shown in SET dialog only -->
+        <TextView
+            android:id="@+id/backendLabel"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:visibility="gone"
+            tools:text="192.168.0.170" />
+    </LinearLayout>
+</FrameLayout>

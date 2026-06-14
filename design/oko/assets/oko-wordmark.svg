@@ -1,0 +1,18 @@
+<svg width="320" height="96" viewBox="0 0 320 96" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="OKO">
+  <defs>
+    <radialGradient id="wm-lens" cx="50%" cy="42%" r="62%">
+      <stop offset="0%" stop-color="#ffb199"></stop>
+      <stop offset="14%" stop-color="#ff5a3c"></stop>
+      <stop offset="30%" stop-color="#ff3a24"></stop>
+      <stop offset="50%" stop-color="#e2122a"></stop>
+      <stop offset="72%" stop-color="#8f0816"></stop>
+      <stop offset="100%" stop-color="#1a0204"></stop>
+    </radialGradient>
+  </defs>
+  
+  <text x="0" y="70" font-family="&#39;Space Grotesk&#39;, system-ui, sans-serif" font-size="76" font-weight="700" letter-spacing="2" fill="#f6f6f3">O</text>
+  <text x="56" y="70" font-family="&#39;Space Grotesk&#39;, system-ui, sans-serif" font-size="76" font-weight="700" letter-spacing="2" fill="#f6f6f3">K</text>
+  <circle cx="152" cy="48" r="34" fill="#040405" stroke="#1c1f25" stroke-width="1.5"></circle>
+  <circle cx="152" cy="48" r="26" fill="url(#wm-lens)"></circle>
+  <circle cx="152" cy="45" r="8" fill="#fff4ef"></circle>
+</svg>

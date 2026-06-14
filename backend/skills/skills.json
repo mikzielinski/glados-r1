@@ -1,0 +1,105 @@
+{
+  "skills": [
+    {
+      "name": "github_api",
+      "description": "GitHub: list/open PRs, issues, branches, or repo file. Use for git/github requests.",
+      "webhook": "http://127.0.0.1:8787/api/integrations/github",
+      "method": "POST",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "list_prs",
+              "get_pr",
+              "list_issues",
+              "get_file",
+              "create_issue"
+            ],
+            "description": "GitHub operation"
+          },
+          "owner": {
+            "type": "string"
+          },
+          "repo": {
+            "type": "string"
+          },
+          "number": {
+            "type": "number",
+            "description": "PR or issue number"
+          },
+          "path": {
+            "type": "string",
+            "description": "File path in repo"
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "action"
+        ]
+      }
+    },
+    {
+      "name": "uipath_orchestrator",
+      "description": "UiPath Orchestrator: queues, jobs, releases, robots. Use for RPA / UiPath automation.",
+      "webhook": "http://127.0.0.1:8787/api/integrations/uipath",
+      "method": "POST",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "list_queues",
+              "add_queue_item",
+              "start_job",
+              "list_releases",
+              "job_status"
+            ],
+            "description": "Orchestrator operation"
+          },
+          "queue_name": {
+            "type": "string"
+          },
+          "item_data": {
+            "type": "object",
+            "description": "Queue item JSON payload"
+          },
+          "release_key": {
+            "type": "string"
+          },
+          "job_id": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "action"
+        ]
+      }
+    },
+    {
+      "name": "standards_lookup",
+      "description": "Search loaded PDF company standards by keyword. Use when user asks about norms, standards, PDF rules.",
+      "webhook": "webhook/standards-search",
+      "method": "POST",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Keyword or phrase to find in standards PDFs"
+          }
+        },
+        "required": [
+          "query"
+        ]
+      }
+    }
+  ]
+}

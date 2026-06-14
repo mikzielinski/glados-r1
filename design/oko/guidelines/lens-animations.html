@@ -1,0 +1,70 @@
+<!-- @dsCard group="Brand" viewport="760x460" name="Lens in motion" subtitle="The eye, animated — idle breath, listen pulse, think arc, speak, alert, offline" -->
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OKO · Animacje oka</title>
+<link rel="stylesheet" href="../styles.css">
+<style>
+  html,body{ margin:0; background:radial-gradient(120% 100% at 50% 10%, #0d0e12, #050506 60%, #040405 100%);
+    color:var(--text-primary); font-family:var(--font-ui); }
+  .grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; padding:30px 30px 34px; }
+  .cell{ display:flex; flex-direction:column; align-items:center; gap:14px; padding:22px 10px 18px;
+    border:1px solid var(--border); border-radius:10px; background:rgba(244,244,242,0.015); }
+  .label{ font-family:var(--font-mono); font-size:var(--fs-label); letter-spacing:var(--track-label);
+    text-transform:uppercase; color:var(--text-secondary); }
+  .sub{ font-family:var(--font-mono); font-size:9px; letter-spacing:.06em; color:var(--text-muted); margin-top:-8px; text-transform:uppercase; }
+
+  /* ---- the eye ---- */
+  .stage{ position:relative; width:110px; height:110px; }
+  .housing{ position:absolute; inset:0; border-radius:50%;
+    background:radial-gradient(circle at 50% 38%, #15171c, #08090b 70%, #040405);
+    box-shadow:inset 0 2px 6px rgba(0,0,0,.8), inset 0 0 0 1px rgba(244,244,242,.05); }
+  .lens{ position:absolute; inset:14px; border-radius:50%; background:var(--lens-gradient);
+    box-shadow:var(--glow-md); }
+  .lens.dim{ background:var(--lens-gradient-dim); box-shadow:none; }
+  .core{ position:absolute; top:42%; left:50%; width:24px; height:24px; transform:translate(-50%,-50%);
+    border-radius:50%; background:radial-gradient(circle at 50% 45%, #fff4ef 0%, #ff6a4d 45%, transparent 100%); }
+  .catch{ position:absolute; top:27%; left:33%; width:8px; height:8px; border-radius:50%;
+    background:rgba(255,255,255,.6); filter:blur(1px); }
+  .ring{ position:absolute; inset:2px; border-radius:50%; border:1px solid var(--red-500); opacity:0; }
+  .arc{ position:absolute; inset:7px; border-radius:50%;
+    background:conic-gradient(from 0deg, transparent 0deg, transparent 250deg, var(--red-500) 320deg, var(--red-core) 360deg);
+    -webkit-mask:radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+    mask:radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px)); opacity:0; }
+
+  /* ---- motion ---- */
+  @keyframes breath { 0%,100%{ transform:scale(.975);} 50%{ transform:scale(1.025);} }
+  @keyframes pulsering { 0%,100%{ opacity:.5; transform:scale(1);} 50%{ opacity:1; transform:scale(1.1);} }
+  @keyframes spin { to{ transform:rotate(360deg);} }
+  @keyframes flicker { 0%,100%{opacity:1;} 46%{opacity:.82;} 50%{opacity:.55;} 54%{opacity:.9;} }
+  @keyframes alert { 0%,100%{ filter:brightness(1);} 50%{ filter:brightness(1.55);} }
+  @keyframes speakcore { 0%{transform:translate(-50%,-50%) scale(.7);} 20%{transform:translate(-50%,-50%) scale(1.25);}
+    40%{transform:translate(-50%,-50%) scale(.85);} 60%{transform:translate(-50%,-50%) scale(1.35);}
+    80%{transform:translate(-50%,-50%) scale(.95);} 100%{transform:translate(-50%,-50%) scale(.7);} }
+  @keyframes glowbreath { 0%,100%{ box-shadow:var(--glow-md);} 50%{ box-shadow:var(--glow-lg);} }
+
+  .idle  .lens{ animation:breath 4.2s var(--ease-hal) infinite; }
+  .listen .lens{ animation:breath 1.1s var(--ease-hal) infinite, glowbreath 1.1s var(--ease-hal) infinite; }
+  .listen .ring{ opacity:1; animation:pulsering 1.1s var(--ease-hal) infinite; }
+  .think .lens{ animation:flicker 2.4s steps(1,end) infinite, breath 4.2s var(--ease-hal) infinite; }
+  .think .arc{ opacity:.9; animation:spin 1.6s linear infinite; }
+  .speak .lens{ animation:glowbreath 1.2s var(--ease-hal) infinite; }
+  .speak .core{ animation:speakcore .9s var(--ease-hal) infinite; }
+  .alert .lens{ animation:alert .7s var(--ease-hal) infinite; }
+
+  @media (prefers-reduced-motion: reduce){ .lens,.ring,.arc,.core{ animation:none !important; } }
+</style>
+</head>
+<body>
+<div class="grid">
+  <div class="cell"><div class="stage idle"><div class="housing"></div><div class="lens"><div class="core"></div><div class="catch"></div></div></div><div class="label">Bezczynność</div><div class="sub">idle · oddech 4.2s</div></div>
+  <div class="cell"><div class="stage listen"><div class="housing"></div><div class="ring"></div><div class="lens"><div class="core"></div><div class="catch"></div></div></div><div class="label">Nasłuch</div><div class="sub">listening · puls</div></div>
+  <div class="cell"><div class="stage think"><div class="housing"></div><div class="arc"></div><div class="lens"><div class="core"></div><div class="catch"></div></div></div><div class="label">Myślenie</div><div class="sub">thinking · łuk + migotanie</div></div>
+  <div class="cell"><div class="stage speak"><div class="housing"></div><div class="lens"><div class="core"></div><div class="catch"></div></div></div><div class="label">Mowa</div><div class="sub">speaking · jądro = amplituda</div></div>
+  <div class="cell"><div class="stage alert"><div class="housing"></div><div class="lens"><div class="core"></div><div class="catch"></div></div></div><div class="label">Alarm</div><div class="sub">alert · rozbłysk</div></div>
+  <div class="cell"><div class="stage offline"><div class="housing"></div><div class="lens dim"></div></div><div class="label">Offline</div><div class="sub">offline · wygaszone</div></div>
+</div>
+</body>
+</html>

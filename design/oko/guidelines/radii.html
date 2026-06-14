@@ -1,0 +1,19 @@
+<!-- @dsCard group="Spacing" viewport="700x180" name="Radii" subtitle="Machined panels — tight radii. Only the lens is a circle." -->
+<!DOCTYPE html>
+<html lang="pl"><head><meta charset="UTF-8"><link rel="stylesheet" href="../styles.css">
+<style>
+  html,body{margin:0;background:var(--bg);color:var(--text-primary);font-family:var(--font-ui);}
+  .wrap{padding:24px 26px;display:flex;gap:20px;align-items:flex-end;}
+  .item{display:flex;flex-direction:column;align-items:center;gap:10px;}
+  .box{width:74px;height:74px;background:var(--surface-card);border:1px solid var(--line-2);}
+  .tag{font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:.04em;}
+  .circle{background:var(--lens-gradient);border:none;box-shadow:var(--glow-sm);}
+</style></head>
+<body><div class="wrap">
+  <div class="item"><div class="box" style="border-radius:var(--radius-sm)"></div><span class="tag">sm · 2</span></div>
+  <div class="item"><div class="box" style="border-radius:var(--radius-md)"></div><span class="tag">md · 4</span></div>
+  <div class="item"><div class="box" style="border-radius:var(--radius-lg)"></div><span class="tag">lg · 8</span></div>
+  <div class="item"><div class="box" style="border-radius:var(--radius-xl)"></div><span class="tag">xl · 12</span></div>
+  <div class="item"><div class="box" style="border-radius:var(--radius-pill)"></div><span class="tag">pill · 999</span></div>
+  <div class="item"><div class="box circle" style="border-radius:50%"></div><span class="tag">circle · lens</span></div>
+</div></body></html>

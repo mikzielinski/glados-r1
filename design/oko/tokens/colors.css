@@ -1,0 +1,73 @@
+/* OKO — Color tokens
+   System: HAL-9000 void darkness as the ground, GLaDOS clinical off-white as type/labels,
+   a single glowing crimson lens as the one true accent. Amber = caution/processing,
+   cold green = nominal/online, cold cyan = passive info. Color is RATIONED: the red
+   means "the agent is present/acting." Everything else is monochrome void + clinical white. */
+
+:root {
+  /* ---- Void (HAL darkness) ---- */
+  --void-900: #040405;   /* deepest background / behind everything */
+  --void-800: #08090b;   /* app background */
+  --void-700: #0d0e11;   /* inset / screen well */
+  --void-600: #131419;   /* raised void */
+
+  /* ---- Panels (machined surfaces) ---- */
+  --panel-900: #0f1014;
+  --panel-800: #15171c;  /* default card */
+  --panel-700: #1c1f25;  /* hover / raised card */
+  --panel-600: #262a31;
+
+  /* ---- Hairlines (etched seams) ---- */
+  --line-1: rgba(244, 244, 242, 0.08);   /* default border */
+  --line-2: rgba(244, 244, 242, 0.14);   /* stronger seam */
+  --line-3: rgba(244, 244, 242, 0.22);   /* divider / focus seam */
+
+  /* ---- HAL red (the lens) ---- */
+  --red-core: #ff3a24;   /* hot center of the lens */
+  --red-500: #e2122a;    /* primary accent */
+  --red-600: #c20d22;    /* pressed */
+  --red-700: #8f0816;    /* deep ring */
+  --red-900: #45040b;    /* lens shadow */
+  --red-tint: rgba(226, 18, 42, 0.14);   /* wash behind active items */
+  --red-glow: rgba(226, 18, 42, 0.55);   /* glow color */
+
+  /* ---- Clinical (GLaDOS off-white) ---- */
+  --clinical-50:  #f6f6f3;  /* primary text, slightly warm white */
+  --clinical-100: #e8e8e3;
+  --clinical-300: #b6b8b3;  /* secondary text */
+  --clinical-500: #7e817b;  /* muted labels */
+  --clinical-700: #4a4d49;  /* disabled */
+
+  /* ---- Secondary monitors ---- */
+  --amber-400: #f4b32a;  /* caution / processing */
+  --amber-600: #c8870f;
+  --ok-400:    #43d27e;  /* nominal / online */
+  --info-400:  #5bc8d8;  /* passive info / cold readout */
+
+  /* ---- Semantic aliases ---- */
+  --bg:            var(--void-800);
+  --bg-deep:       var(--void-900);
+  --surface-card:  var(--panel-800);
+  --surface-raised:var(--panel-700);
+  --surface-inset: var(--void-700);
+
+  --text-primary:  var(--clinical-50);
+  --text-secondary:var(--clinical-300);
+  --text-muted:    var(--clinical-500);
+  --text-disabled: var(--clinical-700);
+  --text-on-accent:#ffffff;
+
+  --accent:        var(--red-500);
+  --accent-hot:    var(--red-core);
+  --accent-press:  var(--red-600);
+
+  --border:        var(--line-1);
+  --border-strong: var(--line-2);
+  --divider:       var(--line-3);
+  --focus-ring:    var(--red-500);
+
+  --status-ok:     var(--ok-400);
+  --status-warn:   var(--amber-400);
+  --status-danger: var(--red-500);
+  --status-info:   var(--info-400);
+}

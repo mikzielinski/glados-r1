@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>OKO — Kreator integracji</title>
+  <link rel="stylesheet" href="/setup/style.css" />
+</head>
+<body>
+  <div class="shell">
+    <header class="top">
+      <div class="brand">OKO <span>Integracje</span></div>
+      <div class="steps" id="steps"></div>
+    </header>
+
+    <main class="panel">
+      <!-- Step 0 -->
+      <section class="step active" data-step="0">
+        <h1>Kreator GitHub &amp; UiPath</h1>
+        <p class="lead">
+          Połącz repozytoria i Orchestrator bez ręcznego n8n. OAuth lub token — klikasz, autoryzujesz, gotowe.
+        </p>
+        <ul class="checklist">
+          <li>GitHub — OAuth App lub Personal Access Token</li>
+          <li>UiPath — External Application w Automation Cloud</li>
+          <li>Automatyczna konfiguracja skilli GLaDOS (bez webhooków n8n)</li>
+        </ul>
+        <div class="actions">
+          <button class="btn primary" data-next>Zacznij →</button>
+        </div>
+      </section>
+
+      <!-- Step 1 GitHub -->
+      <section class="step" data-step="1" id="github">
+        <h2>GitHub</h2>
+        <p class="lead">Wybierz OAuth (zalecane) albo wklej PAT.</p>
+
+        <div class="tabs">
+          <button class="tab active" data-tab="gh-oauth">OAuth App</button>
+          <button class="tab" data-tab="gh-pat">Personal Token</button>
+        </div>
+
+        <div class="tab-panel active" id="gh-oauth">
+          <div class="hint box">
+            <strong>GitHub → Settings → Developer settings → OAuth Apps → New</strong><br />
+            Callback URL: <code id="gh-callback">…</code>
+          </div>
+          <label>Client ID<input id="gh-client-id" autocomplete="off" /></label>
+          <label>Client Secret<input id="gh-client-secret" type="password" autocomplete="off" /></label>
+          <div class="actions row">
+            <button class="btn" id="gh-save-config">Zapisz dane OAuth</button>
+            <button class="btn primary" id="gh-oauth-start">Połącz przez GitHub →</button>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="gh-pat">
+          <label>Personal Access Token (classic lub fine-grained)
+            <input id="gh-pat-token" type="password" placeholder="ghp_…" autocomplete="off" />
+          </label>
+          <button class="btn primary" id="gh-pat-save">Zapisz i przetestuj</button>
+        </div>
+
+        <div class="status" id="gh-status"></div>
+        <div class="actions">
+          <button class="btn ghost" data-prev>← Wstecz</button>
+          <button class="btn primary" data-next>Dalej →</button>
+        </div>
+      </section>
+
+      <!-- Step 2 UiPath -->
+      <section class="step" data-step="2" id="uipath">
+        <h2>UiPath Orchestrator</h2>
+        <p class="lead">External Application w Automation Cloud → Admin → External Applications.</p>
+
+        <div class="hint box">
+          Redirect URI: <code id="ui-callback">…</code><br />
+          Scopes: <code>OR.Administration OR.Jobs OR.Queues OR.Folders OR.Execution</code>
+        </div>
+
+        <label>Account URL<input id="ui-account" value="https://cloud.uipath.com" /></label>
+        <label>Organization (folder name w URL)<input id="ui-org" placeholder="np. moja-firma" /></label>
+        <label>Tenant<input id="ui-tenant" value="DefaultTenant" /></label>
+        <label>Client ID<input id="ui-client-id" autocomplete="off" /></label>
+        <label>Client Secret<input id="ui-client-secret" type="password" autocomplete="off" /></label>
+
+        <div class="actions row">
+          <button class="btn" id="ui-save-config">Zapisz konfigurację</button>
+          <button class="btn primary" id="ui-oauth-start">Zaloguj przez UiPath →</button>
+        </div>
+
+        <div class="status" id="ui-status"></div>
+        <div class="actions">
+          <button class="btn ghost" data-prev>← Wstecz</button>
+          <button class="btn primary" data-next>Dalej →</button>
+        </div>
+      </section>
+
+      <!-- Step 3 Summary -->
+      <section class="step" data-step="3" id="summary">
+        <h2>Podsumowanie</h2>
+        <div class="cards" id="summary-cards"></div>
+        <div class="actions row">
+          <button class="btn" id="test-all">Przetestuj połączenia</button>
+          <button class="btn primary" id="finish">Zakończ i aktywuj skille</button>
+        </div>
+        <div class="status" id="finish-status"></div>
+        <p class="muted">Po zakończeniu GLaDOS używa lokalnych endpointów — n8n nie jest wymagane.</p>
+      </section>
+    </main>
+  </div>
+  <script src="/setup/app.js"></script>
+</body>
+</html>

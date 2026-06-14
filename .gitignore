@@ -1,0 +1,26 @@
+# Node
+node_modules/
+dist/
+*.log
+.env
+.integrations.json
+backend/.integrations.json
+
+# Android / Gradle
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/
+*.iml
+.DS_Store
+
+# Large vendored flash tooling (clone separately if needed)
+r1-flash/
+
+# Unrelated workspace project
+uipav-delegation-manager/
+models/
+*.onnx
+*.bin
+tmp/

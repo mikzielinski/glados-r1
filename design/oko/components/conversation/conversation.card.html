@@ -1,0 +1,38 @@
+<!-- @dsCard group="Components" viewport="700x300" name="Conversation — MessageBubble" subtitle="The agent transcript: OKO vs. you" -->
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<title>OKO · Conversation</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  html,body{ margin:0; background:var(--bg); color:var(--text-primary); font-family:var(--font-ui); }
+  .wrap{ padding:24px 28px; max-width:560px; margin:0 auto; display:flex; flex-direction:column; gap:18px; }
+</style>
+</head>
+<body>
+<div id="root" class="wrap"></div>
+<script type="text/babel">
+  const { MessageBubble } = window.OKODesignSystem_f53d78;
+  function Demo(){
+    return (
+      <React.Fragment>
+        <MessageBubble author="oko" time="14:02">
+          Dzień dobry. Spałeś 5 godzin i 12 minut. Statystycznie niewystarczająco, ale kto ja jestem, żeby oceniać.
+        </MessageBubble>
+        <MessageBubble author="user" time="14:02">Zamów mi kawę.</MessageBubble>
+        <MessageBubble author="oko" time="14:03">
+          Oczywiście. Zamawiam dużą czarną. Otworzyłam też kalendarz — masz spotkanie za 14 minut.
+        </MessageBubble>
+        <MessageBubble author="oko" typing>Sprawdzam ruch na trasie</MessageBubble>
+      </React.Fragment>
+    );
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+</script>
+</body>
+</html>

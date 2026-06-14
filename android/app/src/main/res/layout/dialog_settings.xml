@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:fillViewport="true"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="monospace"
+            android:letterSpacing="0.08"
+            android:text="@string/settings_skin_title"
+            android:textAllCaps="true"
+            android:textColor="@color/clinical_300"
+            android:textSize="10sp" />
+
+        <RadioGroup
+            android:id="@+id/skinGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp">
+
+            <RadioButton
+                android:id="@+id/skinHal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="monospace"
+                android:paddingVertical="4dp"
+                android:text="@string/skin_hal9000"
+                android:textColor="@color/clinical_50"
+                android:textSize="13sp" />
+
+            <RadioButton
+                android:id="@+id/skinGlados"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="monospace"
+                android:paddingVertical="4dp"
+                android:text="@string/skin_glados"
+                android:textColor="@color/clinical_50"
+                android:textSize="13sp" />
+
+            <RadioButton
+                android:id="@+id/skinTars"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="monospace"
+                android:paddingVertical="4dp"
+                android:text="@string/skin_tars"
+                android:textColor="@color/clinical_50"
+                android:textSize="13sp" />
+        </RadioGroup>
+
+        <TextView
+            android:id="@+id/tarsTraitsTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:fontFamily="monospace"
+            android:letterSpacing="0.08"
+            android:text="@string/settings_tars_traits_title"
+            android:textAllCaps="true"
+            android:textColor="@color/clinical_300"
+            android:textSize="10sp"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:id="@+id/tarsTraitsPanel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/tarsHonestyLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="monospace"
+                android:textColor="@color/clinical_50"
+                android:textSize="11sp" />
+
+            <SeekBar
+                android:id="@+id/tarsHonestySeek"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="100" />
+
+            <TextView
+                android:id="@+id/tarsHumorLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:fontFamily="monospace"
+                android:textColor="@color/clinical_50"
+                android:textSize="11sp" />
+
+            <SeekBar
+                android:id="@+id/tarsHumorSeek"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="100" />
+
+            <TextView
+                android:id="@+id/tarsSarcasmLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:fontFamily="monospace"
+                android:textColor="@color/clinical_50"
+                android:textSize="11sp" />
+
+            <SeekBar
+                android:id="@+id/tarsSarcasmSeek"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="100" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/newSessionButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:fontFamily="monospace"
+            android:text="@string/settings_new_session"
+            android:textAllCaps="true" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:fontFamily="monospace"
+            android:letterSpacing="0.08"
+            android:text="@string/settings_backend_title"
+            android:textAllCaps="true"
+            android:textColor="@color/clinical_300"
+            android:textSize="10sp" />
+
+        <EditText
+            android:id="@+id/backendUrlInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_transcript"
+            android:fontFamily="monospace"
+            android:hint="@string/settings_backend_hint"
+            android:inputType="textUri"
+            android:padding="10dp"
+            android:singleLine="true"
+            android:textColor="@color/clinical_50"
+            android:textColorHint="@color/clinical_700"
+            android:textSize="11sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:fontFamily="monospace"
+            android:lineSpacingExtra="4dp"
+            android:text="@string/settings_controls_help"
+            android:textColor="@color/clinical_500"
+            android:textSize="10sp" />
+    </LinearLayout>
+</ScrollView>

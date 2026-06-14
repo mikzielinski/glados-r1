@@ -1,0 +1,6 @@
+/* OKO — Webfonts
+   Intended faces: Space Grotesk (grotesque UI/display) + Space Mono (data/terminal).
+   These are a deliberate superfamily pairing (Space Mono is the parent of Space Grotesk).
+   Loaded from the Google Fonts CDN. To ship fully offline, replace this @import with
+   self-hosted @font-face rules pointing at copied .woff2 binaries. */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap');

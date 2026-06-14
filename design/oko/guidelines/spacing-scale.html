@@ -1,0 +1,21 @@
+<!-- @dsCard group="Spacing" viewport="700x200" name="Spacing scale" subtitle="4px base grid — space-1 … space-9" -->
+<!DOCTYPE html>
+<html lang="pl"><head><meta charset="UTF-8"><link rel="stylesheet" href="../styles.css">
+<style>
+  html,body{margin:0;background:var(--bg);color:var(--text-primary);font-family:var(--font-ui);}
+  .wrap{padding:22px 26px;display:flex;flex-direction:column;gap:9px;}
+  .row{display:flex;align-items:center;gap:14px;}
+  .bar{height:14px;background:var(--red-500);border-radius:2px;box-shadow:var(--glow-sm);}
+  .tag{font-family:var(--font-mono);font-size:10px;color:var(--text-muted);width:120px;flex:0 0 auto;letter-spacing:.04em;}
+</style></head>
+<body><div class="wrap">
+  <div class="row"><span class="tag">space-1 · 4</span><span class="bar" style="width:4px"></span></div>
+  <div class="row"><span class="tag">space-2 · 8</span><span class="bar" style="width:8px"></span></div>
+  <div class="row"><span class="tag">space-3 · 12</span><span class="bar" style="width:12px"></span></div>
+  <div class="row"><span class="tag">space-4 · 16</span><span class="bar" style="width:16px"></span></div>
+  <div class="row"><span class="tag">space-5 · 24</span><span class="bar" style="width:24px"></span></div>
+  <div class="row"><span class="tag">space-6 · 32</span><span class="bar" style="width:32px"></span></div>
+  <div class="row"><span class="tag">space-7 · 48</span><span class="bar" style="width:48px"></span></div>
+  <div class="row"><span class="tag">space-8 · 64</span><span class="bar" style="width:64px"></span></div>
+  <div class="row"><span class="tag">space-9 · 96</span><span class="bar" style="width:96px"></span></div>
+</div></body></html>

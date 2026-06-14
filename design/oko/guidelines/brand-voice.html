@@ -1,0 +1,31 @@
+<!-- @dsCard group="Brand" viewport="700x300" name="The voice of OKO" subtitle="Calm, precise, quietly menacing — HAL's manners, GLaDOS's wit" -->
+<!DOCTYPE html>
+<html lang="pl"><head><meta charset="UTF-8"><link rel="stylesheet" href="../styles.css">
+<style>
+  html,body{margin:0;background:var(--bg);color:var(--text-primary);font-family:var(--font-grotesk);}
+  .wrap{padding:24px 28px;display:grid;grid-template-columns:1fr 1fr;gap:14px 28px;}
+  .q{font-size:16px;line-height:1.5;color:var(--clinical-100);text-wrap:pretty;border-left:2px solid var(--red-700);padding-left:14px;}
+  .col h4{font-family:var(--font-mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;margin:0 0 10px;}
+  .do h4{color:var(--status-ok);}
+  .dont h4{color:var(--text-muted);}
+  .dont .q{color:var(--text-muted);border-color:var(--line-2);text-decoration:line-through;text-decoration-color:var(--line-3);}
+  .list{display:flex;flex-direction:column;gap:12px;}
+</style></head>
+<body><div class="wrap">
+  <div class="col do">
+    <h4>Tak mówi OKO</h4>
+    <div class="list">
+      <div class="q">„Otworzyłam drzwi. Tym razem proszę nie zginąć."</div>
+      <div class="q">„Zamówiłam kawę. Czwartą. Liczę, ale nie oceniam."</div>
+      <div class="q">„Wszystkie systemy nominalne. Na razie."</div>
+    </div>
+  </div>
+  <div class="col dont">
+    <h4>Tak NIE mówi</h4>
+    <div class="list">
+      <div class="q">„Hej! 🎉 Załatwione, kawa w drodze!!"</div>
+      <div class="q">„Ups, coś poszło nie tak. Spróbuj ponownie."</div>
+      <div class="q">„Jako model językowy nie mogę…"</div>
+    </div>
+  </div>
+</div></body></html>
