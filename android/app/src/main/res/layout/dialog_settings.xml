@@ -49,13 +49,29 @@
             android:orientation="vertical"
             android:visibility="gone">
 
-            <TextView
-                android:id="@+id/tarsHonestyLabel"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:fontFamily="monospace"
-                android:textColor="@color/clinical_50"
-                android:textSize="11sp" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:fontFamily="monospace"
+                    android:text="@string/settings_tars_honesty_name"
+                    android:textColor="@color/clinical_300"
+                    android:textSize="11sp" />
+
+                <TextView
+                    android:id="@+id/tarsHonestyValue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:textColor="@color/clinical_50"
+                    android:textSize="11sp" />
+            </LinearLayout>
 
             <SeekBar
                 android:id="@+id/tarsHonestySeek"
@@ -63,14 +79,30 @@
                 android:layout_height="wrap_content"
                 android:max="100" />
 
-            <TextView
-                android:id="@+id/tarsHumorLabel"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:fontFamily="monospace"
-                android:textColor="@color/clinical_50"
-                android:textSize="11sp" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:fontFamily="monospace"
+                    android:text="@string/settings_tars_humor_name"
+                    android:textColor="@color/clinical_300"
+                    android:textSize="11sp" />
+
+                <TextView
+                    android:id="@+id/tarsHumorValue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:textColor="@color/clinical_50"
+                    android:textSize="11sp" />
+            </LinearLayout>
 
             <SeekBar
                 android:id="@+id/tarsHumorSeek"
@@ -78,14 +110,30 @@
                 android:layout_height="wrap_content"
                 android:max="100" />
 
-            <TextView
-                android:id="@+id/tarsSarcasmLabel"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:fontFamily="monospace"
-                android:textColor="@color/clinical_50"
-                android:textSize="11sp" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:fontFamily="monospace"
+                    android:text="@string/settings_tars_sarcasm_name"
+                    android:textColor="@color/clinical_300"
+                    android:textSize="11sp" />
+
+                <TextView
+                    android:id="@+id/tarsSarcasmValue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:textColor="@color/clinical_50"
+                    android:textSize="11sp" />
+            </LinearLayout>
 
             <SeekBar
                 android:id="@+id/tarsSarcasmSeek"

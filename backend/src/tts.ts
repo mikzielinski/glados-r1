@@ -2,9 +2,10 @@ import { spawn } from "node:child_process";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { isVol2FemaleSkin, isVol2MaleSkin, type AgentSkinId } from "./agent-skins.js";
+import { isVol2FemaleSkin, isVol2MaleSkin, isVol2Skin, type AgentSkinId } from "./agent-skins.js";
 import { fishVoiceIdForSkin } from "./agent-skins.js";
 import { polishForSpeech } from "./spoken-polish.js";
+import { fishPolishHint } from "./skin-replies.js";
 import type { Config } from "./config.js";
 import { logger } from "./logger.js";
 import { applyVoiceFx, fxPresetForSkin } from "./glados-fx.js";
@@ -46,7 +47,7 @@ export class GladosTts {
   }
 
   async synthesize(text: string, skin: AgentSkinId = "glados"): Promise<TtsResult> {
-    const clean = text.trim();
+    const clean = polishForSpeech(text.trim());
     if (!clean) return { pcm: Buffer.alloc(0), sampleRate: 48_000 };
 
     const provider = pickProvider(clean, this.cfg, this.defaultProvider, skin);
@@ -57,7 +58,7 @@ export class GladosTts {
       return toR1PlaybackRate(result.pcm, result.sampleRate);
     } catch (err) {
       if (provider === "fish" && this.cfg.piperModelPl) {
-        log.warn(`Fish Audio failed for ${skin} — falling back to Piper PL + FX`, err);
+        log.warn(`Fish Audio failed for ${skin} — falling back to Piper PL`, err);
         const result = await this.synthesizeWithProvider(clean, "piper-pl", skin);
         return toR1PlaybackRate(result.pcm, result.sampleRate);
       }
@@ -85,7 +86,7 @@ export class GladosTts {
           config,
           piperLengthScaleForSkin(skin, this.cfg),
         );
-        if (this.cfg.ttsGladosFx) {
+        if (this.cfg.ttsGladosFx && !isVol2Skin(skin)) {
           try {
             result = await applyVoiceFx(
               result.pcm,
@@ -105,15 +106,17 @@ export class GladosTts {
     }
   }
 
-  /** Fish Audio — GLaDOS PL clone only (HAL/TARS Fish models are English). */
+  /** Fish Audio — multilingual clones; Polish via S2-Pro bracket hints + prosody speed. */
   private async fishAudio(text: string, skin: AgentSkinId): Promise<TtsResult> {
-    const spoken = polishForSpeech(text);
+    const hint = fishPolishHint(skin);
+    const payload = hint ? `${hint} ${text}` : text;
     const voiceId = fishVoiceIdForSkin(skin, {
       glados: this.cfg.fishVoiceId,
       hal: this.cfg.fishVoiceIdHal,
       tars: this.cfg.fishVoiceIdTars,
     });
-    log.debug(`fish voice=${voiceId.slice(0, 8)}… skin=${skin} chars=${spoken.length}`);
+    const speed = fishProsodySpeedForSkin(skin);
+    log.debug(`fish voice=${voiceId.slice(0, 8)}… skin=${skin} speed=${speed} chars=${payload.length}`);
     const resp = await fetch("https://api.fish.audio/v1/tts", {
       method: "POST",
       headers: {
@@ -122,14 +125,14 @@ export class GladosTts {
         model: this.cfg.fishModel,
       },
       body: JSON.stringify({
-        text: spoken,
+        text: payload,
         reference_id: voiceId,
         format: "wav",
         sample_rate: 44100,
         normalize: true,
         latency: "balanced",
         prosody: {
-          speed: 1,
+          speed,
           volume: 0,
           normalize_loudness: true,
         },
@@ -282,10 +285,13 @@ function pickProvider(
 
   const polish = looksPolish(text);
 
-  // GLaDOS: Fish PL clone speaks Polish correctly (same fix as in our first GLaDOS voice work).
-  if (skin === "glados" && cfg.fishApiKey && polish) return "fish";
+  // GLaDOS + vol.2: Fish S2-Pro — native Polish (Piper gosia/darkman brzmi obco).
+  if ((skin === "glados" || isVol2Skin(skin)) && cfg.fishApiKey && polish) return "fish";
 
-  // HAL / TARS / vol.2 male: Piper PL darkman + character FX.
+  // HAL / TARS + Polish → Fish when key set (lepszy PL niż darkman Piper).
+  if ((skin === "hal9000" || skin === "tars") && cfg.fishApiKey && polish) return "fish";
+
+  // HAL / TARS / vol.2 male Piper fallback (no Fish).
   if (
     (skin === "hal9000" || skin === "tars" || isVol2MaleSkin(skin)) &&
     polish &&
@@ -294,7 +300,7 @@ function pickProvider(
     return "piper-pl";
   }
 
-  // Vol.2 female anime personas: Piper PL gosia + light portal FX.
+  // vol.2 female Piper fallback (no Fish).
   if (isVol2FemaleSkin(skin) && polish && cfg.piperModelPl) return "piper-pl";
 
   // English on HAL/TARS can still use Fish character voice.
@@ -321,6 +327,29 @@ function piperPlModelForSkin(
   const model = cfg.piperModelPl;
   const config = cfg.piperConfigPl || model.replace(/\.onnx$/, ".onnx.json");
   return { model, config };
+}
+
+function fishProsodySpeedForSkin(skin: AgentSkinId): number {
+  switch (skin) {
+    case "hal9000":
+      return 0.88;
+    case "tars":
+      return 0.95;
+    case "onee":
+      return 0.86;
+    case "tsun":
+      return 0.98;
+    case "kohai":
+      return 1.1;
+    case "komandor":
+      return 1.12;
+    case "egz":
+      return 0.92;
+    case "wiesiek":
+      return 0.96;
+    default:
+      return 1;
+  }
 }
 
 function piperLengthScaleForSkin(skin: AgentSkinId, cfg: Config): number {

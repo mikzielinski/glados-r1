@@ -9,7 +9,8 @@ import {
   codeInstructions,
   netInstructions,
 } from "./persona.js";
-import { type AgentSkinId, personaForSkin } from "./agent-skins.js";
+import { personaForSkin, type AgentSkinId } from "./agent-skins.js";
+import { slmPolishInstructions } from "./polish-language.js";
 import { chatInstructionsForSkin, codeInstructionsForSkin } from "./skin-replies.js";
 import { normalizeTarsTraits, tarsTraitsPrompt } from "./tars-traits.js";
 import type { StandardsRegistry } from "./standards.js";
@@ -171,8 +172,9 @@ export class Brain implements BrainLike {
     const templatesBlock = hooks.templatesBlock?.trim() ? `\n\n${hooks.templatesBlock.trim()}` : "";
     const tarsBlock = skin === "tars" ? `\n\n${tarsTraitsPrompt(traits)}` : "";
     const persona = personaForSkin(skin);
+    const polishBlock = `\n\n${slmPolishInstructions(skin)}`;
     const prompt =
-      buildPrompt(persona, instructions, transcript) + skillHint + standardsBlock + templatesBlock + memoryBlock + tarsBlock;
+      buildPrompt(persona + polishBlock, instructions, transcript) + skillHint + standardsBlock + templatesBlock + memoryBlock + tarsBlock;
 
     const run = await this.sendWithRetry(agent, prompt, customTools);
     this.activeRun = run;

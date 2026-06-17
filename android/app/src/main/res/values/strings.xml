@@ -54,6 +54,10 @@
     <string name="skin_wiesiek">Pan Wiesio · majster (żółty)</string>
     <string name="settings_saved">Zapisano. Łączę…</string>
     <string name="settings_tars_traits_title">TARS · osobowość</string>
+    <string name="settings_tars_honesty_name">Szczerość</string>
+    <string name="settings_tars_humor_name">Humor</string>
+    <string name="settings_tars_sarcasm_name">Sarkazm</string>
+    <string name="settings_tars_trait_value">%1$d%%</string>
     <string name="settings_tars_honesty">Szczerość: %1$d%%</string>
     <string name="settings_tars_humor">Humor: %1$d%%</string>
     <string name="settings_tars_sarcasm">Sarkazm: %1$d%%</string>

@@ -133,15 +133,27 @@ export function assistantLabel(skin: AgentSkinId): string {
   }
 }
 
-/** S2-Pro bracket hint so English voice clones still deliver Polish text natively. */
+/** S2-Pro bracket hint — forces native Polish delivery on English voice clones. */
 export function fishPolishHint(skin: AgentSkinId): string {
   switch (skin) {
     case "hal9000":
       return "[speaking in fluent Polish, calm HAL-9000 tone, slow precise delivery]";
     case "tars":
       return "[speaking in fluent Polish, dry TARS tone, direct military clarity]";
+    case "onee":
+      return "[speaking in fluent Polish, warm gentle onee-san tone, slow velvet delivery, ara ara]";
+    case "tsun":
+      return "[speaking in fluent Polish, sharp tsundere tone, fast then soft, native accent]";
+    case "kohai":
+      return "[speaking in fluent Polish, enthusiastic young kohai tone, bright and eager]";
+    case "komandor":
+      return "[speaking in fluent Polish, loud bombastic captain tone, theatrical military delivery]";
+    case "egz":
+      return "[speaking in fluent Polish, deadpan tired exorcist tone, dry native Polish]";
+    case "wiesiek":
+      return "[speaking in fluent Polish, casual construction worker tone, native Polish slang]";
     default:
-      return "";
+      return "[speaking in fluent Polish, clear native pronunciation]";
   }
 }
 

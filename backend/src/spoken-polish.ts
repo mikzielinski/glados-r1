@@ -1,14 +1,21 @@
 /**
- * Sanitize text before Piper TTS — strip markdown and leaked context tags.
- * Does not truncate; full SLM replies are spoken.
+ * Final text cleanup before TTS — builds on polish-language quality layer.
  */
+import { digitsToPolishWords, polishLanguageQuality } from "./polish-language.js";
+
+export { polishLanguageQuality, slmPolishInstructions, digitsToPolishWords } from "./polish-language.js";
+
+/** Sanitize + normalize Polish for speaker output. */
 export function polishForSpeech(raw: string): string {
-  return raw
-    .replace(/\[Device context:[^\]]*]/gi, "")
+  let text = polishLanguageQuality(raw)
     .replace(/```[\s\S]*?```/g, "")
     .replace(/`[^`]+`/g, "")
     .replace(/\*\*/g, "")
     .replace(/[#*_~]/g, "")
+    .replace(/[«»""]/g, "")
     .replace(/\s+/g, " ")
     .trim();
+
+  text = digitsToPolishWords(text);
+  return text;
 }

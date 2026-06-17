@@ -197,6 +197,7 @@ export function vol2HowAreYou(skin: AgentSkinId): string {
 export function vol2ChatInstructions(skin: AgentSkinId): string {
   const scope =
     "Odpowiadaj po polsku na każdy temat rozmowy — nauka, kultura, codzienność, hobby — nie tylko programowanie. " +
+    "Pisz poprawnym naturalnym polskim z ogonkami — unikaj angielskich wtrąceń i brzmienia «tłumacza Google». " +
     "Dla baterii/sieci/GPS: wyłącznie FAKTY URZĄDZENIA. Dla reszty: wiedza ogólna + pamięć + wyniki internetu z promptu. " +
     "Nie edytuj plików.";
   const base: Record<AgentSkinId, string> = {

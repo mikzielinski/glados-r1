@@ -78,16 +78,24 @@ Wszystkie trzy trafiają do **indeksu RAG** (`/setup#rag`). Agent używa RAG, gd
 
 ## Voice pipeline (TTS)
 
-| Skin | Model (PL) | FX |
-|------|------------|-----|
-| **GLaDOS** | Fish PL clone (lub Gosia + portal ring-mod) | portal FX, depth ~0.10 |
-| **HAL** | `pl_PL-darkman-medium` | pitch −3.5 st, tempo 0.80, ring-mod 40 Hz |
-| **TARS** | `pl_PL-darkman-medium` | pitch −1 st, ring-mod 60 Hz + dry flanger |
-| **On-Ē / Tsundere / Kōhai** | `pl_PL-gosia-medium` | subtle ring-mod, tempo per postać |
-| **Kapitan** | `pl_PL-darkman-medium` | HAL-like (szybciej, głośniej) |
-| **Egzorcysta / Pan Wiesio** | `pl_PL-darkman-medium` | EQ only (deadpan / majster) |
+Każda z **9 skórek** ma własny routing głosu. **Polski:** preferuj **Fish Audio S2-Pro** (native PL + hint w nawiasie); Piper tylko jako fallback.
 
-Konfiguracja: `backend/.env` — patrz [`backend/.env.example`](backend/.env.example).
+| Skin | ID | Provider (PL) | Głos Fish / Piper | Tempo Fish |
+|------|-----|---------------|-------------------|------------|
+| **HAL 9000** | `hal9000` | Fish → Piper `darkman` | Fish HAL + PL hint | 0.88 |
+| **GLaDOS** | `glados` | Fish → Piper `gosia` | Fish GLaDOS clone | 1.00 |
+| **TARS** | `tars` | Fish → Piper `darkman` | Fish TARS + PL hint | 0.95 |
+| **On-Ē** | `onee` | **Fish** → Piper `gosia` | Fish GLaDOS + onee hint | 0.86 |
+| **Tsundere** | `tsun` | **Fish** → Piper `gosia` | Fish GLaDOS + tsun hint | 0.98 |
+| **Kōhai** | `kohai` | **Fish** → Piper `gosia` | Fish GLaDOS + kohai hint | 1.10 |
+| **Kapitan** | `komandor` | **Fish** → Piper `darkman` | Fish HAL + kapitan hint | 1.12 |
+| **Egzorcysta** | `egz` | **Fish** → Piper `darkman` | Fish HAL + egz hint | 0.92 |
+| **Pan Wiesio** | `wiesiek` | **Fish** → Piper `darkman` | Fish HAL + wiesiek hint | 0.96 |
+
+**Normalizacja PL** (`polish-language.ts` + `spoken-polish.ts`): ogonki, cyfry → słowa, kalki językowe, strip markdown.  
+**Jakość generowanego tekstu (SLM):** blok `slmPolishInstructions` + post-processing. Model: **Bielik 7B** (`./scripts/setup-ollama-pl.sh bielik` → `pmysl/bielik:7b-instruct-v0.1-q3_k_m`).
+
+Konfiguracja: `backend/.env` — `FISH_API_KEY` **wymagany** dla dobrego PL na vol.2; patrz [`backend/.env.example`](backend/.env.example).
 
 ## Repository layout
 

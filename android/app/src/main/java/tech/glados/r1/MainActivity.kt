@@ -69,9 +69,9 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
     private var tarsHonestySeekRef: SeekBar? = null
     private var tarsHumorSeekRef: SeekBar? = null
     private var tarsSarcasmSeekRef: SeekBar? = null
-    private var tarsHonestyLabelRef: android.widget.TextView? = null
-    private var tarsHumorLabelRef: android.widget.TextView? = null
-    private var tarsSarcasmLabelRef: android.widget.TextView? = null
+    private var tarsHonestyValueRef: android.widget.TextView? = null
+    private var tarsHumorValueRef: android.widget.TextView? = null
+    private var tarsSarcasmValueRef: android.widget.TextView? = null
     private var tarsHudHideRunnable: Runnable? = null
 
     private val memoryFilePicker =
@@ -794,18 +794,18 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
         val honestySeek = view.findViewById<android.widget.SeekBar>(R.id.tarsHonestySeek)
         val humorSeek = view.findViewById<android.widget.SeekBar>(R.id.tarsHumorSeek)
         val sarcasmSeek = view.findViewById<android.widget.SeekBar>(R.id.tarsSarcasmSeek)
-        val honestyLabel = view.findViewById<android.widget.TextView>(R.id.tarsHonestyLabel)
-        val humorLabel = view.findViewById<android.widget.TextView>(R.id.tarsHumorLabel)
-        val sarcasmLabel = view.findViewById<android.widget.TextView>(R.id.tarsSarcasmLabel)
+        val honestyValue = view.findViewById<android.widget.TextView>(R.id.tarsHonestyValue)
+        val humorValue = view.findViewById<android.widget.TextView>(R.id.tarsHumorValue)
+        val sarcasmValue = view.findViewById<android.widget.TextView>(R.id.tarsSarcasmValue)
 
         honestySeek.progress = prefs.tarsHonesty
         humorSeek.progress = prefs.tarsHumor
         sarcasmSeek.progress = prefs.tarsSarcasm
 
         fun updateTarsLabels() {
-            honestyLabel.text = getString(R.string.settings_tars_honesty, honestySeek.progress)
-            humorLabel.text = getString(R.string.settings_tars_humor, humorSeek.progress)
-            sarcasmLabel.text = getString(R.string.settings_tars_sarcasm, sarcasmSeek.progress)
+            honestyValue.text = getString(R.string.settings_tars_trait_value, honestySeek.progress)
+            humorValue.text = getString(R.string.settings_tars_trait_value, humorSeek.progress)
+            sarcasmValue.text = getString(R.string.settings_tars_trait_value, sarcasmSeek.progress)
         }
 
         fun showTarsPanel(skin: AgentSkin) {
@@ -816,6 +816,7 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
         }
 
         showTarsPanel(prefs.skin)
+        updateTarsLabels()
 
         skinSpinner.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: android.widget.AdapterView<*>?, v: android.view.View?, position: Int, id: Long) {
@@ -825,7 +826,8 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
         }
 
         val updateSlider = object : android.widget.SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {        updateTarsLabels()
+            override fun onProgressChanged(seekBar: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
+                updateTarsLabels()
             }
             override fun onStartTrackingTouch(seekBar: android.widget.SeekBar?) {}
             override fun onStopTrackingTouch(seekBar: android.widget.SeekBar?) {}
@@ -843,9 +845,9 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
         tarsHonestySeekRef = honestySeek
         tarsHumorSeekRef = humorSeek
         tarsSarcasmSeekRef = sarcasmSeek
-        tarsHonestyLabelRef = honestyLabel
-        tarsHumorLabelRef = humorLabel
-        tarsSarcasmLabelRef = sarcasmLabel
+        tarsHonestyValueRef = honestyValue
+        tarsHumorValueRef = humorValue
+        tarsSarcasmValueRef = sarcasmValue
 
         view.findViewById<android.widget.Button>(R.id.memoryLearnButton).setOnClickListener {
             val text = memoryNoteInput.text.toString().trim()
@@ -919,9 +921,9 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
             tarsHonestySeekRef = null
             tarsHumorSeekRef = null
             tarsSarcasmSeekRef = null
-            tarsHonestyLabelRef = null
-            tarsHumorLabelRef = null
-            tarsSarcasmLabelRef = null
+            tarsHonestyValueRef = null
+            tarsHumorValueRef = null
+            tarsSarcasmValueRef = null
         }
 
         dialog.show()
@@ -935,9 +937,9 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
         tarsHonestySeekRef?.progress = event.honesty
         tarsHumorSeekRef?.progress = event.humor
         tarsSarcasmSeekRef?.progress = event.sarcasm
-        tarsHonestyLabelRef?.text = getString(R.string.settings_tars_honesty, event.honesty)
-        tarsHumorLabelRef?.text = getString(R.string.settings_tars_humor, event.humor)
-        tarsSarcasmLabelRef?.text = getString(R.string.settings_tars_sarcasm, event.sarcasm)
+        tarsHonestyValueRef?.text = getString(R.string.settings_tars_trait_value, event.honesty)
+        tarsHumorValueRef?.text = getString(R.string.settings_tars_trait_value, event.humor)
+        tarsSarcasmValueRef?.text = getString(R.string.settings_tars_trait_value, event.sarcasm)
 
         showTarsTraitsHud(event)
     }
@@ -952,6 +954,10 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
         val sarcasmLabel = findViewById<android.widget.TextView>(R.id.tarsHudSarcasmLabel)
         val changedLabel = findViewById<android.widget.TextView>(R.id.tarsHudChanged)
 
+        honestyLabel.text = getString(R.string.settings_tars_honesty, event.honesty)
+        humorLabel.text = getString(R.string.settings_tars_humor, event.humor)
+        sarcasmLabel.text = getString(R.string.settings_tars_sarcasm, event.sarcasm)
+
         changedLabel.text = when (event.changed) {
             "honesty" -> getString(R.string.tars_hud_changed_honesty, event.from, event.to)
             "humor" -> getString(R.string.tars_hud_changed_humor, event.from, event.to)
@@ -963,17 +969,17 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
             honestyBar,
             if (event.changed == "honesty") event.from else honestyBar.progress,
             event.honesty,
-        ) { honestyLabel.text = getString(R.string.settings_tars_honesty, event.honesty) }
+        )
         animateTraitBar(
             humorBar,
             if (event.changed == "humor") event.from else humorBar.progress,
             event.humor,
-        ) { humorLabel.text = getString(R.string.settings_tars_humor, event.humor) }
+        )
         animateTraitBar(
             sarcasmBar,
             if (event.changed == "sarcasm") event.from else sarcasmBar.progress,
             event.sarcasm,
-        ) { sarcasmLabel.text = getString(R.string.settings_tars_sarcasm, event.sarcasm) }
+        )
 
         tarsHudHideRunnable?.let { mainHandler.removeCallbacks(it) }
         root.animate().cancel()
@@ -994,11 +1000,9 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
         bar: ProgressBar,
         from: Int,
         to: Int,
-        onEnd: () -> Unit,
     ) {
         if (from == to) {
             bar.progress = to
-            onEnd()
             return
         }
         ValueAnimator.ofInt(from.coerceIn(0, 100), to.coerceIn(0, 100)).apply {
@@ -1006,11 +1010,6 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
             addUpdateListener { anim ->
                 bar.progress = anim.animatedValue as Int
             }
-            addListener(object : android.animation.AnimatorListenerAdapter() {
-                override fun onAnimationEnd(animation: android.animation.Animator) {
-                    onEnd()
-                }
-            })
             start()
         }
     }

@@ -12,6 +12,7 @@ import {
 import { personaForSkin, type AgentSkinId } from "./agent-skins.js";
 import { assistantLabel, chatInstructionsForSkin, fewShotForSkin } from "./skin-replies.js";
 import { normalizeTarsTraits, slmTemperatureForTars, tarsTraitsPrompt, type TarsTraits } from "./tars-traits.js";
+import { slmPolishInstructions } from "./polish-language.js";
 import { polishForSpeech } from "./spoken-polish.js";
 import { deviceFactsBlock, splitTranscriptAndContext } from "./transcript-context.js";
 
@@ -76,6 +77,7 @@ export class SlmBrain implements BrainLike {
     hooks.onAssistantText?.("…");
 
     const persona = personaForSkin(skin);
+    const polishBlock = `\n\n${slmPolishInstructions(skin)}`;
     const tarsBlock = skin === "tars" ? `\n\n${tarsTraitsPrompt(traits)}` : "";
     const memoryBlock = hooks.memoryBlock?.trim() ? `\n\n${hooks.memoryBlock.trim()}` : "";
     const templatesBlock = hooks.templatesBlock?.trim() ? `\n\n${hooks.templatesBlock.trim()}` : "";
@@ -92,15 +94,15 @@ export class SlmBrain implements BrainLike {
         messages: [
           {
             role: "system",
-            content: `${persona}\n\n${modeInstructions}${generalTopics}\n\n${deviceFactsBlock(deviceFacts)}${tarsBlock}${templatesBlock}${memoryBlock}\n\n${fewShotForSkin(skin, skin === "tars" ? traits : undefined)}`,
+            content: `${persona}${polishBlock}\n\n${modeInstructions}${generalTopics}\n\n${deviceFactsBlock(deviceFacts)}${tarsBlock}${templatesBlock}${memoryBlock}\n\n${fewShotForSkin(skin, skin === "tars" ? traits : undefined)}`,
           },
           ...this.history,
         ],
         stream: false,
         options: {
           temperature,
-          top_p: 0.85,
-          num_predict: this.cfg.slmMaxTokens,
+          top_p: 0.9,
+          num_predict: Math.max(this.cfg.slmMaxTokens, 160),
           stop: ["Użytkownik:", "User:", "\nU:", `\n${assistantLabel(skin)}:`],
         },
       }),
