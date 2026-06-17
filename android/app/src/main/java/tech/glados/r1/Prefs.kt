@@ -42,6 +42,16 @@ class Prefs(context: Context) {
         get() = sp.getInt("tarsSarcasm", 35).coerceIn(0, 100)
         set(value) = sp.edit().putInt("tarsSarcasm", value.coerceIn(0, 100)).apply()
 
+    /** Stable per-device id for long-term contextual memory (survives session reset). */
+    val memoryDeviceId: String
+        get() {
+            val existing = sp.getString("memoryDeviceId", null)
+            if (existing != null) return existing
+            val fresh = UUID.randomUUID().toString()
+            sp.edit().putString("memoryDeviceId", fresh).apply()
+            return fresh
+        }
+
     /** New conversation id — clears cloud agent resume too. */
     fun resetSession(): String {
         val fresh = UUID.randomUUID().toString()

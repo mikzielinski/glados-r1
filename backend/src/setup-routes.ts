@@ -7,11 +7,26 @@ import type { Config } from "./config.js";
 import type { IntegrationsStore } from "./integrations-store.js";
 import {
   handleGitHubSkill,
+  handleStandardsSkill,
   handleUiPathSkill,
+  handleWebSearchSkill,
   testGitHubConnection,
   testUiPathConnection,
 } from "./integration-handlers.js";
+import { saveLocalConfigFile, loadLocalConfigFile } from "./local-config.js";
 import { logger } from "./logger.js";
+import type { MemoryStore } from "./memory-store.js";
+import { GLOBAL_MEMORY_DEVICE } from "./memory-store.js";
+import type { SkillRegistry } from "./skills.js";
+import type { SkillDef } from "./skills.js";
+import {
+  deleteSkill,
+  importSkills,
+  patchLocalSkillWebhooks,
+  readSkillsFile,
+  upsertSkill,
+} from "./skills-file.js";
+import type { StandardsRegistry } from "./standards.js";
 
 const log = logger("setup");
 
@@ -46,6 +61,9 @@ export class SetupRoutes {
   constructor(
     private readonly cfg: Config,
     private readonly store: IntegrationsStore,
+    private readonly memory: MemoryStore,
+    private readonly skills: SkillRegistry,
+    private readonly standards: StandardsRegistry,
   ) {
     this.publicDir = resolve(process.cwd(), "public/setup");
     this.baseUrl = cfg.setupBaseUrl.replace(/\/$/, "");
@@ -66,7 +84,21 @@ export class SetupRoutes {
 
     if (path === "/api/setup/status") {
       await this.store.load();
-      return json(res, 200, { ok: true, ...this.store.status(), setupUrl: `${this.baseUrl}/setup` });
+      const local = await loadLocalConfigFile();
+      const mem = await this.memory.getStatus(GLOBAL_MEMORY_DEVICE);
+      await this.skills.getCustomTools();
+      return json(res, 200, {
+        ok: true,
+        ...this.store.status(),
+        setupUrl: `${this.baseUrl}/setup`,
+        n8nBaseUrl: local.n8nBaseUrl ?? this.cfg.n8nBaseUrl,
+        n8nAuthHeaderSet: Boolean(local.n8nAuthHeader ?? this.cfg.n8nAuthHeader),
+        serperApiKeySet: Boolean(local.serperApiKey ?? this.cfg.serperApiKey),
+        webSearchEnabled: local.webSearchEnabled ?? this.cfg.webSearchEnabled,
+        skills: this.skills.getNames(),
+        memoryGlobalCount: mem.count,
+        standardsCount: this.standards.count,
+      });
     }
 
     if (path === "/api/setup/github/config" && req.method === "POST") {
@@ -108,8 +140,139 @@ export class SetupRoutes {
     if (path === "/api/integrations/uipath" && req.method === "POST") {
       return this.runSkill(req, res, "uipath");
     }
+    if (path === "/api/integrations/standards" && req.method === "POST") {
+      return this.runStandardsSkill(req, res);
+    }
+    if (path === "/api/integrations/web-search" && req.method === "POST") {
+      return this.runWebSearchSkill(req, res);
+    }
+
+    if (path === "/api/setup/memory" && req.method === "GET") {
+      const deviceId = url.searchParams.get("deviceId") ?? GLOBAL_MEMORY_DEVICE;
+      const status = await this.memory.getStatus(deviceId);
+      return json(res, 200, { ok: true, deviceId, ...status });
+    }
+    if (path === "/api/setup/memory/learn" && req.method === "POST") {
+      return this.memoryLearn(req, res);
+    }
+    if (path === "/api/setup/memory/upload" && req.method === "POST") {
+      return this.memoryUpload(req, res);
+    }
+    if (path === "/api/setup/memory/clear" && req.method === "POST") {
+      const body = await readJson(req);
+      const deviceId = String(body.deviceId ?? GLOBAL_MEMORY_DEVICE);
+      const n = await this.memory.clear(deviceId);
+      return json(res, 200, { ok: true, cleared: n, deviceId });
+    }
+
+    if (path === "/api/setup/skills" && req.method === "GET") {
+      const list = await readSkillsFile(this.cfg);
+      const local = await loadLocalConfigFile();
+      return json(res, 200, {
+        ok: true,
+        skills: list,
+        n8nBaseUrl: local.n8nBaseUrl ?? this.cfg.n8nBaseUrl,
+        n8nAuthHeader: local.n8nAuthHeader ?? this.cfg.n8nAuthHeader,
+      });
+    }
+    if (path === "/api/setup/skills" && req.method === "POST") {
+      return this.saveSkill(req, res);
+    }
+    if (path.startsWith("/api/setup/skills/") && req.method === "DELETE") {
+      const name = decodeURIComponent(path.slice("/api/setup/skills/".length));
+      const skills = await deleteSkill(this.cfg, name);
+      return json(res, 200, { ok: true, skills });
+    }
+    if (path === "/api/setup/skills/import" && req.method === "POST") {
+      return this.importSkills(req, res);
+    }
+    if (path === "/api/setup/n8n/config" && req.method === "POST") {
+      return this.saveN8nConfig(req, res);
+    }
+    if (path === "/api/setup/web/config" && req.method === "POST") {
+      return this.saveWebConfig(req, res);
+    }
 
     return false;
+  }
+
+  private async runStandardsSkill(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
+    const body = await readJson(req);
+    await this.standards.refreshIfStale(0);
+    const result = await handleStandardsSkill(this.standards, body);
+    res.writeHead(result.ok ? 200 : 502, { "content-type": "text/plain; charset=utf-8" });
+    res.end(result.text);
+    return true;
+  }
+
+  private async runWebSearchSkill(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
+    const body = await readJson(req);
+    const result = await handleWebSearchSkill(this.cfg, body);
+    res.writeHead(result.ok ? 200 : 502, { "content-type": "text/plain; charset=utf-8" });
+    res.end(result.text);
+    return true;
+  }
+
+  private async memoryLearn(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
+    const body = await readJson(req);
+    const text = String(body.text ?? "").trim();
+    const deviceId = String(body.deviceId ?? GLOBAL_MEMORY_DEVICE);
+    if (!text) return json(res, 400, { ok: false, message: "Podaj text." });
+    const entry = await this.memory.learnText(deviceId, text, {
+      title: body.title ? String(body.title) : undefined,
+      force: body.force === true,
+    });
+    return json(res, 200, { ok: true, entry: { id: entry.id, title: entry.title }, deviceId });
+  }
+
+  private async memoryUpload(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
+    const body = await readJson(req);
+    const filename = String(body.filename ?? "upload.bin");
+    const base64 = String(body.base64 ?? "");
+    const deviceId = String(body.deviceId ?? GLOBAL_MEMORY_DEVICE);
+    if (!base64) return json(res, 400, { ok: false, message: "Brak base64." });
+    const data = Buffer.from(base64, "base64");
+    const entry = await this.memory.ingestFile(deviceId, filename, data, body.force === true);
+    return json(res, 200, { ok: true, entry: { id: entry.id, title: entry.title }, deviceId });
+  }
+
+  private async saveSkill(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
+    const body = await readJson(req);
+    const skill = body as unknown as SkillDef;
+    if (!skill.name || !skill.description || !skill.webhook) {
+      return json(res, 400, { ok: false, message: "Wymagane: name, description, webhook." });
+    }
+    const skills = await upsertSkill(this.cfg, skill);
+    return json(res, 200, { ok: true, skills });
+  }
+
+  private async importSkills(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
+    const body = await readJson(req);
+    const incoming = (body.skills ?? body) as SkillDef[];
+    if (!Array.isArray(incoming)) {
+      return json(res, 400, { ok: false, message: "Oczekiwano { skills: [...] }." });
+    }
+    const merge = body.merge !== false;
+    const skills = await importSkills(this.cfg, incoming, merge);
+    return json(res, 200, { ok: true, count: skills.length, skills });
+  }
+
+  private async saveN8nConfig(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
+    const body = await readJson(req);
+    const local = await saveLocalConfigFile({
+      n8nBaseUrl: String(body.n8nBaseUrl ?? "").trim() || undefined,
+      n8nAuthHeader: String(body.n8nAuthHeader ?? "").trim() || undefined,
+    });
+    return json(res, 200, { ok: true, ...local, message: "Zapisano konfigurację n8n." });
+  }
+
+  private async saveWebConfig(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
+    const body = await readJson(req);
+    const local = await saveLocalConfigFile({
+      serperApiKey: String(body.serperApiKey ?? "").trim() || undefined,
+      webSearchEnabled: body.webSearchEnabled !== false,
+    });
+    return json(res, 200, { ok: true, ...local, message: "Zapisano ustawienia wyszukiwania." });
   }
 
   private async runSkill(req: IncomingMessage, res: ServerResponse, which: "github" | "uipath"): Promise<boolean> {
@@ -360,11 +523,13 @@ export class SetupRoutes {
   private async finishSetup(res: ServerResponse): Promise<boolean> {
     await this.store.load();
     const status = this.store.status();
-    await patchSkillsWebhooks(this.cfg, this.baseUrl);
+    await patchLocalSkillWebhooks(this.cfg, this.baseUrl);
+    await this.skills.getCustomTools();
     return json(res, 200, {
       ok: true,
-      message: "Skille wskazują na lokalne integracje (bez n8n).",
+      message: "Skille wskazują na lokalne endpointy OKO (GitHub, UiPath, standardy PDF, web search). n8n opcjonalne dla własnych webhooków.",
       status,
+      skills: this.skills.getNames(),
     });
   }
 
@@ -374,27 +539,6 @@ export class SetupRoutes {
     createReadStream(filePath).pipe(res);
     return true;
   }
-}
-
-async function patchSkillsWebhooks(cfg: Config, baseUrl: string): Promise<void> {
-  const skillsPath = resolve(process.cwd(), cfg.skillsFile);
-  let raw: string;
-  try {
-    raw = await readFile(skillsPath, "utf8");
-  } catch {
-    log.warn(`skills file not found: ${skillsPath}`);
-    return;
-  }
-  const parsed = JSON.parse(raw) as { skills?: Array<Record<string, unknown>> };
-  const list = parsed.skills ?? (Array.isArray(parsed) ? parsed as Array<Record<string, unknown>> : []);
-  const base = baseUrl.replace(/\/$/, "");
-  for (const skill of list) {
-    if (skill.name === "github_api") skill.webhook = `${base}/api/integrations/github`;
-    if (skill.name === "uipath_orchestrator") skill.webhook = `${base}/api/integrations/uipath`;
-  }
-  const out = parsed.skills ? parsed : { skills: list };
-  await writeFile(skillsPath, `${JSON.stringify(out, null, 2)}\n`, "utf8");
-  log.info("patched skills.json webhooks to local integration endpoints");
 }
 
 function json(res: ServerResponse, code: number, body: unknown): boolean {

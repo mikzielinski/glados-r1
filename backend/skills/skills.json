@@ -86,7 +86,7 @@
     {
       "name": "standards_lookup",
       "description": "Search loaded PDF company standards by keyword. Use when user asks about norms, standards, PDF rules.",
-      "webhook": "webhook/standards-search",
+      "webhook": "http://127.0.0.1:8787/api/integrations/standards",
       "method": "POST",
       "inputSchema": {
         "type": "object",
@@ -94,6 +94,24 @@
           "query": {
             "type": "string",
             "description": "Keyword or phrase to find in standards PDFs"
+          }
+        },
+        "required": [
+          "query"
+        ]
+      }
+    },
+    {
+      "name": "web_search",
+      "description": "Search the public internet for current facts, news, weather, prices, definitions. Use when memory/standards lack the answer.",
+      "webhook": "http://127.0.0.1:8787/api/integrations/web-search",
+      "method": "POST",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Search query in Polish or English"
           }
         },
         "required": [

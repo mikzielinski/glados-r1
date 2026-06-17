@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">OKO</string>
+    <string name="boot_launch_channel">Autostart</string>
+    <string name="boot_launch_notification">Uruchamianie OKO…</string>
     <string name="oko_brand">OKO</string>
     <string name="status_starting">Inicjalizacja…</string>
     <string name="status_connecting">Łączenie z backendem…</string>
@@ -48,4 +50,17 @@
     <string name="settings_tars_sarcasm">Sarkazm: %1$d%%</string>
     <string name="settings_new_session">Nowa sesja</string>
     <string name="settings_session_cleared">Nowa sesja. Historia wyczyszczona.</string>
+    <string name="settings_memory_title">Pamięć kontekstowa</string>
+    <string name="settings_memory_count">Zapisane wpisy: %1$d</string>
+    <string name="settings_memory_hint">Notatka do zapamiętania (fakt, preferencja, wiedza)…</string>
+    <string name="settings_memory_learn">Zapamiętaj</string>
+    <string name="settings_memory_upload">Dodaj plik (PDF/TXT)</string>
+    <string name="settings_memory_force">Wymuś naukę z rozmowy</string>
+    <string name="settings_memory_clear">Wyczyść pamięć</string>
+    <string name="settings_memory_upload_ok">Dodano do pamięci: %1$s</string>
+    <string name="settings_memory_learn_ok">Zapamiętano (%1$d wpisów)</string>
+    <string name="tars_hud_title">TARS · konfiguracja</string>
+    <string name="tars_hud_changed_honesty">Szczerość %1$d → %2$d</string>
+    <string name="tars_hud_changed_humor">Humor %1$d → %2$d</string>
+    <string name="tars_hud_changed_sarcasm">Sarkazm %1$d → %2$d</string>
 </resources>

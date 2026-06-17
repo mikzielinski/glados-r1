@@ -37,7 +37,7 @@ export function tryChatReply(
     "tell me about yourself",
     "your personality",
   ])) {
-    return say(personalityReply(skin), "social");
+    return say(personalityReply(skin, traits), "social");
   }
 
   if (matches(t, ["pogod", "weather", "deszcz", "słońce", "slonce", "temperatur"])) {
@@ -61,7 +61,7 @@ export function tryChatReply(
   }
 
   if (matches(t, ["żart", "zart", "joke", "śmiesz", "smiesz", "ciasto"])) {
-    return say(jokeReply(skin), "joke");
+    return say(jokeReply(skin, traits), "joke");
   }
 
   if (matches(t, ["nudz", "bored", "zabaw"])) {
@@ -75,10 +75,10 @@ export function tryChatReply(
         : "";
     return say(
       skin === "hal9000"
-        ? `Nuda? Mogę zaproponować audyt twojego kodu.${extra}`
+        ? `Nuda? Mogę opowiedzieć o czymkolwiek — albo sprawdzić stan urządzenia.${extra}`
         : skin === "tars"
-          ? `Nuda. Znajdź coś do naprawy.${extra}`
-          : `Nuda to sygnał, że powinieneś coś zepsuć i naprawić. Idealny test laboratoryjny.${extra}`,
+          ? `Nuda. Zapytaj o cokolwiek — nie musi być kod.${extra}`
+          : `Nuda to sygnał, żeby zadać ciekawsze pytanie. Mogę porozmawiać o czymkolwiek.${extra}`,
       "social",
     );
   }

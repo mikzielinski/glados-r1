@@ -11,6 +11,7 @@ import {
 } from "./persona.js";
 import { type AgentSkinId, personaForSkin } from "./agent-skins.js";
 import { chatInstructionsForSkin } from "./skin-replies.js";
+import { normalizeTarsTraits, tarsTraitsPrompt } from "./tars-traits.js";
 import type { StandardsRegistry } from "./standards.js";
 
 const log = logger("brain");
@@ -26,6 +27,8 @@ export interface TurnHooks {
   skin?: AgentSkinId;
   /** TARS honesty / humor / sarcasm sliders (0–100). */
   tarsTraits?: import("./tars-traits.js").TarsTraits;
+  /** Persistent user/device memory block for prompts. */
+  memoryBlock?: string;
 }
 
 export class TurnCancelledError extends Error {
@@ -144,11 +147,13 @@ export class Brain implements BrainLike {
     modeOverride?: string,
   ): Promise<TurnResult> {
     const agent = await this.ensureAgent();
+    const skin = hooks.skin ?? "hal9000";
+    const traits = normalizeTarsTraits(hooks.tarsTraits);
     const instructions =
       modeOverride ??
       (intent === "code" ? codeInstructions() :
         intent === "net" ? netInstructions() :
-        chatInstructionsForSkin(hooks.skin ?? "hal9000"));
+        chatInstructionsForSkin(skin, skin === "tars" ? traits : undefined));
 
     const customTools = (await this.skills?.getCustomTools()) ?? {};
     const skillNames = Object.keys(customTools);
@@ -160,9 +165,11 @@ export class Brain implements BrainLike {
       (intent === "code" || intent === "net") && this.standards
         ? `\n\n${await this.standards.getPromptBlock()}`
         : "";
-    const persona = personaForSkin(hooks.skin ?? "hal9000");
+    const memoryBlock = hooks.memoryBlock?.trim() ? `\n\n${hooks.memoryBlock.trim()}` : "";
+    const tarsBlock = skin === "tars" ? `\n\n${tarsTraitsPrompt(traits)}` : "";
+    const persona = personaForSkin(skin);
     const prompt =
-      buildPrompt(persona, instructions, transcript) + skillHint + standardsBlock;
+      buildPrompt(persona, instructions, transcript) + skillHint + standardsBlock + memoryBlock + tarsBlock;
 
     const run = await this.sendWithRetry(agent, prompt, customTools);
     this.activeRun = run;

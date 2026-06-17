@@ -1,4 +1,4 @@
-const STEP_LABELS = ["Start", "GitHub", "UiPath", "Gotowe"];
+const STEP_LABELS = ["Start", "GitHub", "UiPath", "Pamięć", "Skille", "Gotowe"];
 let currentStep = 0;
 let statusData = {};
 
@@ -18,10 +18,13 @@ function go(step) {
   currentStep = Math.max(0, Math.min(STEP_LABELS.length - 1, step));
   sections.forEach((s) => s.classList.toggle("active", Number(s.dataset.step) === currentStep));
   renderSteps();
-  if (currentStep === 3) renderSummary();
+  if (currentStep === 3) refreshMemoryPanel();
+  if (currentStep === 4) refreshSkillsPanel();
+  if (currentStep === 5) renderSummary();
 }
 
 function showStatus(el, text, kind = "info") {
+  if (!el) return;
   el.textContent = text;
   el.className = `status show ${kind}`;
 }
@@ -34,6 +37,18 @@ async function api(path, opts = {}) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.message || res.statusText);
   return data;
+}
+
+/** Base64 encode without stack overflow on large PDFs (chunked). */
+function arrayBufferToBase64(buf) {
+  const bytes = new Uint8Array(buf);
+  const chunk = 0x8000;
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += chunk) {
+    const slice = bytes.subarray(i, i + chunk);
+    binary += String.fromCharCode(...slice);
+  }
+  return btoa(binary);
 }
 
 function baseUrl() {
@@ -52,6 +67,33 @@ async function refreshStatus() {
   }
 }
 
+async function refreshMemoryPanel() {
+  const el = document.getElementById("memory-count");
+  try {
+    const r = await api("/api/setup/memory?deviceId=global");
+    showStatus(el, `Globalna pamięć: ${r.count} wpisów`, "info");
+  } catch (e) {
+    showStatus(el, e.message, "err");
+  }
+}
+
+async function refreshSkillsPanel() {
+  try {
+    const r = await api("/api/setup/skills");
+    document.getElementById("n8n-base").value = r.n8nBaseUrl || "";
+    document.getElementById("n8n-auth").value = r.n8nAuthHeader || "";
+    const list = document.getElementById("skills-list");
+    list.innerHTML = (r.skills || [])
+      .map(
+        (s) =>
+          `<li><strong>${s.name}</strong> — ${s.description}<br /><code>${s.webhook}</code></li>`,
+      )
+      .join("") || "<li>Brak skilli</li>";
+  } catch (e) {
+    showStatus(document.getElementById("skills-status"), e.message, "err");
+  }
+}
+
 function renderSummary() {
   const gh = statusData.github || {};
   const ui = statusData.uipath || {};
@@ -64,10 +106,21 @@ function renderSummary() {
       <div><h3>UiPath Orchestrator</h3><small>${ui.organization ? `${ui.organization}/${ui.tenant}` : "nie połączono"}</small></div>
       <span class="badge ${ui.connected ? "on" : "off"}">${ui.connected ? "OK" : "brak"}</span>
     </div>
+    <div class="card">
+      <div><h3>Pamięć globalna</h3><small>${statusData.memoryGlobalCount ?? 0} wpisów</small></div>
+      <span class="badge ${(statusData.memoryGlobalCount ?? 0) > 0 ? "on" : "off"}">${(statusData.memoryGlobalCount ?? 0) > 0 ? "OK" : "pusta"}</span>
+    </div>
+    <div class="card">
+      <div><h3>Skille</h3><small>${(statusData.skills || []).join(", ") || "brak"}</small></div>
+      <span class="badge ${(statusData.skills || []).length ? "on" : "off"}">${(statusData.skills || []).length || 0}</span>
+    </div>
+    <div class="card">
+      <div><h3>Internet</h3><small>${statusData.webSearchEnabled ? "włączone" : "wyłączone"} · Serper ${statusData.serperApiKeySet ? "tak" : "nie"}</small></div>
+      <span class="badge ${statusData.webSearchEnabled ? "on" : "off"}">${statusData.webSearchEnabled ? "OK" : "off"}</span>
+    </div>
   `;
 }
 
-// Tabs
 document.querySelectorAll(".tab").forEach((tab) => {
   tab.addEventListener("click", () => {
     document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
@@ -140,6 +193,97 @@ document.getElementById("ui-oauth-start").addEventListener("click", () => {
   window.location.href = "/api/setup/uipath/start";
 });
 
+document.getElementById("memory-learn").addEventListener("click", async () => {
+  const el = document.getElementById("memory-status");
+  const text = document.getElementById("memory-text").value.trim();
+  if (!text) return showStatus(el, "Wpisz notatkę.", "err");
+  try {
+    const r = await api("/api/setup/memory/learn", {
+      method: "POST",
+      body: JSON.stringify({ text, deviceId: "global", force: true }),
+    });
+    showStatus(el, `Zapisano: ${r.entry.title}`, "ok");
+    document.getElementById("memory-text").value = "";
+    await refreshMemoryPanel();
+    await refreshStatus();
+  } catch (e) {
+    showStatus(el, e.message, "err");
+  }
+});
+
+document.getElementById("memory-file").addEventListener("change", async (ev) => {
+  const el = document.getElementById("memory-status");
+  const file = ev.target.files?.[0];
+  if (!file) return;
+  try {
+    const buf = await file.arrayBuffer();
+    const b64 = arrayBufferToBase64(buf);
+    const r = await api("/api/setup/memory/upload", {
+      method: "POST",
+      body: JSON.stringify({ filename: file.name, base64: b64, deviceId: "global", force: true }),
+    });
+    showStatus(el, `Dodano plik: ${r.entry.title}`, "ok");
+    ev.target.value = "";
+    await refreshMemoryPanel();
+    await refreshStatus();
+  } catch (e) {
+    showStatus(el, e.message, "err");
+  }
+});
+
+document.getElementById("n8n-save").addEventListener("click", async () => {
+  const el = document.getElementById("skills-status");
+  try {
+    const r = await api("/api/setup/n8n/config", {
+      method: "POST",
+      body: JSON.stringify({
+        n8nBaseUrl: document.getElementById("n8n-base").value,
+        n8nAuthHeader: document.getElementById("n8n-auth").value,
+      }),
+    });
+    showStatus(el, r.message, "ok");
+  } catch (e) {
+    showStatus(el, e.message, "err");
+  }
+});
+
+document.getElementById("web-save").addEventListener("click", async () => {
+  const el = document.getElementById("skills-status");
+  try {
+    const r = await api("/api/setup/web/config", {
+      method: "POST",
+      body: JSON.stringify({
+        serperApiKey: document.getElementById("serper-key").value,
+        webSearchEnabled: document.getElementById("web-enabled").checked,
+      }),
+    });
+    showStatus(el, r.message, "ok");
+    await refreshStatus();
+  } catch (e) {
+    showStatus(el, e.message, "err");
+  }
+});
+
+document.getElementById("skills-import").addEventListener("click", async () => {
+  const el = document.getElementById("skills-status");
+  const raw = document.getElementById("skills-json").value.trim();
+  if (!raw) return showStatus(el, "Wklej JSON skilli.", "err");
+  try {
+    const parsed = JSON.parse(raw);
+    const r = await api("/api/setup/skills/import", {
+      method: "POST",
+      body: JSON.stringify({ skills: parsed.skills ?? parsed, merge: true }),
+    });
+    showStatus(el, `Zaimportowano — ${r.count} skilli.`, "ok");
+    await refreshSkillsPanel();
+    await refreshStatus();
+  } catch (e) {
+    showStatus(el, e.message, "err");
+  }
+});
+
+document.getElementById("skills-reload").addEventListener("click", () => refreshSkillsPanel());
+
 document.getElementById("test-all").addEventListener("click", async () => {
   const el = document.getElementById("finish-status");
   const parts = [];
@@ -165,12 +309,13 @@ document.getElementById("finish").addEventListener("click", async () => {
   try {
     const r = await api("/api/setup/finish", { method: "POST", body: "{}" });
     showStatus(el, r.message, "ok");
+    await refreshStatus();
+    renderSummary();
   } catch (e) {
     showStatus(el, e.message, "err");
   }
 });
 
-// OAuth return params
 const params = new URLSearchParams(window.location.search);
 if (params.get("error")) {
   showStatus(document.getElementById("gh-status"), params.get("error"), "err");
@@ -182,7 +327,7 @@ if (params.get("github") === "connected") {
 }
 if (params.get("uipath") === "connected") {
   showStatus(document.getElementById("ui-status"), "UiPath połączony.", "ok");
-  go(3);
+  go(5);
 }
 
 renderSteps();
@@ -190,4 +335,6 @@ refreshStatus().catch(() => {});
 
 if (window.location.hash === "#github") go(1);
 if (window.location.hash === "#uipath") go(2);
-if (window.location.hash === "#summary") go(3);
+if (window.location.hash === "#memory") go(3);
+if (window.location.hash === "#skills") go(4);
+if (window.location.hash === "#summary") go(5);

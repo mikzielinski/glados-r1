@@ -11,8 +11,9 @@ const log = logger("hybrid-brain");
 
 /**
  * Routes turns by intent:
- *   chat → local Ollama SLM
- *   code, net → Cursor cloud agent (repo + skills + PDF standards)
+ *   chat → local Ollama SLM (+ web search when needed)
+ *   net  → local SLM + internet search
+ *   code → Cursor cloud agent (repo + skills + PDF standards)
  */
 export class HybridBrain implements BrainLike {
   private readonly slm: SlmBrain;

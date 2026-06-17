@@ -12,7 +12,7 @@
     "start": "node --experimental-strip-types src/index.ts",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "tsx scripts/test-intent.ts && tsx scripts/test-device-router.ts && tsx scripts/test-chat-router.ts && tsx scripts/test-spoken-polish.ts && tsx scripts/test-skills.ts"
+    "test": "tsx scripts/test-intent.ts && tsx scripts/test-device-router.ts && tsx scripts/test-chat-router.ts && tsx scripts/test-spoken-polish.ts && tsx scripts/test-skills.ts && tsx scripts/test-tars-traits.ts && tsx scripts/test-tars-traits-router.ts && tsx scripts/test-web-search.ts && tsx scripts/test-memory-router.ts"
   },
   "dependencies": {
     "@cursor/sdk": "^1.0.18",

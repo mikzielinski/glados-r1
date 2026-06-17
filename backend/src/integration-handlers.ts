@@ -235,3 +235,29 @@ export async function testUiPathConnection(u: UiPathIntegration): Promise<{ ok: 
     return { ok: false, message: (err as Error).message };
   }
 }
+
+export async function handleStandardsSkill(
+  standards: import("./standards.js").StandardsRegistry,
+  args: Record<string, unknown>,
+): Promise<{ ok: boolean; text: string }> {
+  const query = String(args.query ?? "").trim();
+  if (!query) return { ok: false, text: "Podaj query (słowo kluczowe)." };
+  const block = await standards.getPromptBlock(8000);
+  const lines = block.split("\n").filter((line) => line.toLowerCase().includes(query.toLowerCase()));
+  if (lines.length === 0) {
+    return { ok: true, text: `Brak trafień dla «${query}» w załadowanych standardach PDF.` };
+  }
+  return { ok: true, text: lines.slice(0, 12).join("\n") };
+}
+
+export async function handleWebSearchSkill(
+  cfg: import("./config.js").Config,
+  args: Record<string, unknown>,
+): Promise<{ ok: boolean; text: string }> {
+  const query = String(args.query ?? "").trim();
+  if (!query) return { ok: false, text: "Podaj query (fraza wyszukiwania)." };
+  if (!cfg.webSearchEnabled) return { ok: false, text: "Wyszukiwanie internetowe wyłączone w konfiguracji." };
+  const { searchWeb, formatWebPromptBlock } = await import("./web-search.js");
+  const result = await searchWeb(query, cfg);
+  return { ok: true, text: formatWebPromptBlock(result) };
+}

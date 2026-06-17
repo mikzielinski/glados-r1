@@ -170,6 +170,7 @@ class GladosClient(
                 "rabbit-r1",
                 prefs.sessionId,
                 prefs.skinId,
+                prefs.memoryDeviceId,
                 if (prefs.skin == AgentSkin.TARS) prefs.tarsHonesty else null,
                 if (prefs.skin == AgentSkin.TARS) prefs.tarsHumor else null,
                 if (prefs.skin == AgentSkin.TARS) prefs.tarsSarcasm else null,

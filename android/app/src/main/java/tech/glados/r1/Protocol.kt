@@ -4,20 +4,24 @@ import org.json.JSONObject
 
 /**
  * Wire protocol mirror of backend/src/protocol.ts.
- *
- * TEXT frames are JSON control messages; BINARY frames are raw PCM (s16le,
- * mono) — microphone audio up, GLaDOS audio down.
  */
 object Protocol {
     const val CLIENT_VERSION = "0.1.0"
 
-    // ---- Outgoing (client -> server) ----
-
-    fun hello(device: String, sessionId: String?, skin: String, tarsHonesty: Int? = null, tarsHumor: Int? = null, tarsSarcasm: Int? = null): String =
+    fun hello(
+        device: String,
+        sessionId: String?,
+        skin: String,
+        memoryDeviceId: String,
+        tarsHonesty: Int? = null,
+        tarsHumor: Int? = null,
+        tarsSarcasm: Int? = null,
+    ): String =
         JSONObject().apply {
             put("type", "hello")
             put("device", device)
             put("clientVersion", CLIENT_VERSION)
+            put("memoryDeviceId", memoryDeviceId)
             if (sessionId != null) put("sessionId", sessionId)
             put("skin", skin)
             if (tarsHonesty != null && tarsHumor != null && tarsSarcasm != null) {
@@ -48,6 +52,26 @@ object Protocol {
     fun resetSession(): String = JSONObject().put("type", "reset_session").toString()
 
     fun ping(): String = JSONObject().put("type", "ping").toString()
+
+    fun memoryLearn(text: String, title: String? = null, force: Boolean = false): String =
+        JSONObject().apply {
+            put("type", "memory_learn")
+            put("text", text)
+            title?.let { put("title", it) }
+            if (force) put("force", true)
+        }.toString()
+
+    fun memoryUpload(filename: String, base64: String, force: Boolean = false): String =
+        JSONObject().apply {
+            put("type", "memory_upload")
+            put("filename", filename)
+            put("base64", base64)
+            if (force) put("force", true)
+        }.toString()
+
+    fun memoryList(): String = JSONObject().put("type", "memory_list").toString()
+
+    fun memoryClear(): String = JSONObject().put("type", "memory_clear").toString()
 
     fun deviceContext(
         batteryPct: Int? = null,
@@ -82,8 +106,6 @@ object Protocol {
         }
     }.toString()
 
-    // ---- Incoming (server -> client) ----
-
     sealed interface ServerEvent {
         data class Ready(val sessionId: String, val agentId: String?) : ServerEvent
         data class Status(val state: String, val detail: String?) : ServerEvent
@@ -96,6 +118,16 @@ object Protocol {
         object PttAck : ServerEvent
         data class PttRejected(val reason: String) : ServerEvent
         object Pong : ServerEvent
+        data class MemoryStatus(val count: Int, val userName: String?) : ServerEvent
+        data class MemoryLearned(val title: String, val count: Int) : ServerEvent
+        data class TarsTraitsUpdated(
+            val honesty: Int,
+            val humor: Int,
+            val sarcasm: Int,
+            val changed: String,
+            val from: Int,
+            val to: Int,
+        ) : ServerEvent
         object Unknown : ServerEvent
     }
 
@@ -123,6 +155,22 @@ object Protocol {
                 "ptt_ack" -> ServerEvent.PttAck
                 "ptt_rejected" -> ServerEvent.PttRejected(o.optString("reason"))
                 "pong" -> ServerEvent.Pong
+                "memory_status" -> ServerEvent.MemoryStatus(
+                    o.optInt("count", 0),
+                    o.optString("userName").ifEmpty { null },
+                )
+                "memory_learned" -> ServerEvent.MemoryLearned(
+                    o.optString("title"),
+                    o.optInt("count", 0),
+                )
+                "tars_traits_updated" -> ServerEvent.TarsTraitsUpdated(
+                    o.optInt("honesty", 90),
+                    o.optInt("humor", 75),
+                    o.optInt("sarcasm", 35),
+                    o.optString("changed"),
+                    o.optInt("from", 0),
+                    o.optInt("to", 0),
+                )
                 else -> ServerEvent.Unknown
             }
         } catch (_: Exception) {

@@ -1,0 +1,3 @@
+# Launch OKO after Android boot (R1 kiosk). Installed to /system/etc/init/ via setup-r1-kiosk.sh.
+on property:sys.boot_completed=1
+    exec - root shell -- /system/bin/sh /data/local/tmp/launch-oko-boot.sh

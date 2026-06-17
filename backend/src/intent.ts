@@ -1,8 +1,8 @@
 /**
  * Lightweight intent routing before the brain:
- *   chat — local Ollama SLM on your Mac (no internet)
- *   net  — local SLM too (no live web; say so honestly)
- *   code — Cursor SDK in the cloud (repo tools only)
+ *   chat — local Ollama SLM (general conversation + device facts)
+ *   net  — local SLM + optional web search prefetch
+ *   code — Cursor SDK in the cloud (repo tools + skills)
  *
  * Matching is token-based (not substring) so generic words don't trigger false
  * positives — e.g. "report" must not match "repo", "address" must not match
@@ -71,7 +71,7 @@ export function classifyIntent(transcript: string): Intent {
 
 /** Cloud agent: repo work, GitHub, UiPath, standards-backed engineering. */
 export function needsCloudBrain(intent: Intent): boolean {
-  return intent === "code" || intent === "net";
+  return intent === "code";
 }
 
 /** Status label shown on the R1 while thinking. */

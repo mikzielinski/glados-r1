@@ -6,6 +6,8 @@ import {
   chatInstructions,
   codeInstructions,
   netLocalInstructions,
+  netSearchInstructions,
+  slmGeneralTopicsInstructions,
 } from "./persona.js";
 import { personaForSkin, type AgentSkinId } from "./agent-skins.js";
 import { assistantLabel, chatInstructionsForSkin, fewShotForSkin } from "./skin-replies.js";
@@ -65,18 +67,21 @@ export class SlmBrain implements BrainLike {
       await this.checkAvailable();
     }
 
-    const modeInstructions = modeForIntent(intent, hooks.skin ?? "hal9000");
+    const skin = hooks.skin ?? "hal9000";
+    const traits = normalizeTarsTraits(hooks.tarsTraits);
     const { userText, deviceFacts } = splitTranscriptAndContext(transcript.trim());
     this.history.push({ role: "user", content: userText || transcript.trim() });
     this.trimHistory();
 
     hooks.onAssistantText?.("…");
 
-    const skin = hooks.skin ?? "hal9000";
-    const traits = normalizeTarsTraits(hooks.tarsTraits);
     const persona = personaForSkin(skin);
     const tarsBlock = skin === "tars" ? `\n\n${tarsTraitsPrompt(traits)}` : "";
+    const memoryBlock = hooks.memoryBlock?.trim() ? `\n\n${hooks.memoryBlock.trim()}` : "";
     const temperature = skin === "tars" ? slmTemperatureForTars(traits, 0.48) : 0.48;
+    const modeInstructions = modeForIntent(intent, skin, hooks.memoryBlock, traits);
+    const generalTopics =
+      intent === "chat" || intent === "net" ? `\n\n${slmGeneralTopicsInstructions()}` : "";
     const resp = await fetch(`${this.cfg.ollamaBaseUrl}/api/chat`, {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -86,7 +91,7 @@ export class SlmBrain implements BrainLike {
         messages: [
           {
             role: "system",
-            content: `${persona}\n\n${modeInstructions}\n\n${deviceFactsBlock(deviceFacts)}${tarsBlock}\n\n${fewShotForSkin(skin)}`,
+            content: `${persona}\n\n${modeInstructions}${generalTopics}\n\n${deviceFactsBlock(deviceFacts)}${tarsBlock}${memoryBlock}\n\n${fewShotForSkin(skin, skin === "tars" ? traits : undefined)}`,
           },
           ...this.history,
         ],
@@ -135,14 +140,16 @@ export class SlmBrain implements BrainLike {
   }
 }
 
-function modeForIntent(intent: Intent, skin: AgentSkinId): string {
+function modeForIntent(intent: Intent, skin: AgentSkinId, memoryBlock?: string, traits?: TarsTraits): string {
   switch (intent) {
     case "code":
       return `${codeInstructions()}\nTryb lokalny SLM — bez edycji plików. Powiedz użytkownikowi, żeby poprosił o kod, GitHub lub UiPath (wtedy włączy się agent chmurowy w BRAIN_MODE=hybrid).`;
     case "net":
-      return `${netLocalInstructions()}\nBez chmury nie masz live web — zaproponuj pytanie o kod/repo albo włączenie trybu hybrid.`;
+      return memoryBlock?.includes("WYNIKI WYSZUKIWANIA INTERNETU")
+        ? `${netSearchInstructions()}\nBez chmury — odpowiedz z wyników wyszukiwania w kontekście.`
+        : `${netLocalInstructions()}\nSpróbuj odpowiedzieć z pamięci kontekstowej; jeśli brak danych — powiedz wprost.`;
     default:
-      return chatInstructionsForSkin(skin);
+      return chatInstructionsForSkin(skin, traits);
   }
 }
 

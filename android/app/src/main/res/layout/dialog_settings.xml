@@ -138,6 +138,79 @@
             android:layout_marginTop="16dp"
             android:fontFamily="monospace"
             android:letterSpacing="0.08"
+            android:text="@string/settings_memory_title"
+            android:textAllCaps="true"
+            android:textColor="@color/clinical_300"
+            android:textSize="10sp" />
+
+        <TextView
+            android:id="@+id/memoryCountLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:fontFamily="monospace"
+            android:text="@string/settings_memory_count"
+            android:textColor="@color/clinical_50"
+            android:textSize="11sp" />
+
+        <EditText
+            android:id="@+id/memoryNoteInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_transcript"
+            android:fontFamily="monospace"
+            android:gravity="top"
+            android:hint="@string/settings_memory_hint"
+            android:inputType="textMultiLine|textCapSentences"
+            android:minLines="3"
+            android:padding="10dp"
+            android:textColor="@color/clinical_50"
+            android:textColorHint="@color/clinical_700"
+            android:textSize="11sp" />
+
+        <Button
+            android:id="@+id/memoryLearnButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:fontFamily="monospace"
+            android:text="@string/settings_memory_learn"
+            android:textAllCaps="true" />
+
+        <Button
+            android:id="@+id/memoryUploadButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:fontFamily="monospace"
+            android:text="@string/settings_memory_upload"
+            android:textAllCaps="true" />
+
+        <Button
+            android:id="@+id/memoryForceButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:fontFamily="monospace"
+            android:text="@string/settings_memory_force"
+            android:textAllCaps="true" />
+
+        <Button
+            android:id="@+id/memoryClearButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:fontFamily="monospace"
+            android:text="@string/settings_memory_clear"
+            android:textAllCaps="true" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:fontFamily="monospace"
+            android:letterSpacing="0.08"
             android:text="@string/settings_backend_title"
             android:textAllCaps="true"
             android:textColor="@color/clinical_300"

@@ -12,6 +12,28 @@ import { brainStatusLabel, classifyIntent, needsCloudBrain, type Intent } from "
 import { formatLocationFacts, isPlausibleLocation, reverseGeocodeLabel } from "./geocode.js";
 import type { SkillRegistry } from "./skills.js";
 import type { StandardsRegistry } from "./standards.js";
+import type { MemoryStore } from "./memory-store.js";
+import {
+  isForceLearnQuery,
+  isMemoryClearQuery,
+  isMemoryListQuery,
+  memoryListReply,
+  parseLearnPayload,
+} from "./memory-router.js";
+import {
+  applyTarsTraitChange,
+  parseTarsTraitCommand,
+  tarsTraitChangeReply,
+  tarsTraitUnknownReply,
+} from "./tars-traits-router.js";
+import { sanitizeHalSpeech } from "./hal-speech.js";
+import { normalizeTarsTraits, shapeTarsSpeech } from "./tars-traits.js";
+import {
+  extractSearchQuery,
+  formatWebPromptBlock,
+  searchWeb,
+  shouldPrefetchWeb,
+} from "./web-search.js";
 import { WhisperStt } from "./stt.js";
 import { GladosTts } from "./tts.js";
 import { polishForSpeech } from "./spoken-polish.js";
@@ -34,7 +56,6 @@ const MAX_OUTBOUND_QUEUE = 256;
 
 import { normalizeSkinId, type AgentSkinId } from "./agent-skins.js";
 import type { DeviceContext } from "./device-context.js";
-import { normalizeTarsTraits } from "./tars-traits.js";
 
 type Outbound = { kind: "text"; data: string } | { kind: "binary"; data: Buffer };
 
@@ -69,6 +90,9 @@ export class Session {
   private progressTick = 0;
   private asideSpeaking = false;
   private agentSkin: AgentSkinId = "hal9000";
+  private deviceMemoryId = "";
+  private lastUserTranscript = "";
+  private lastAssistantText = "";
 
   constructor(
     readonly id: string,
@@ -79,6 +103,7 @@ export class Session {
     resumeAgentId?: string,
     skills?: SkillRegistry,
     standards?: StandardsRegistry,
+    private readonly memory?: MemoryStore,
   ) {
     this.ws = ws;
     this.inputSampleRate = cfg.inputSampleRate;
@@ -183,6 +208,10 @@ export class Session {
           if (msg.tarsTraits) {
             this.deviceContext.tarsTraits = normalizeTarsTraits(msg.tarsTraits);
           }
+          if (msg.memoryDeviceId?.trim()) {
+            this.deviceMemoryId = msg.memoryDeviceId.trim();
+          }
+          void this.publishMemoryStatus();
         }
         break;
       case "reset_session":
@@ -221,7 +250,174 @@ export class Session {
         log.info(`session ${this.id}: cancel requested`);
         void this.brain.cancelActiveTurn?.();
         break;
+      case "memory_learn":
+        await this.handleMemoryLearn(msg.text, msg.title, msg.force === true);
+        break;
+      case "memory_upload":
+        await this.handleMemoryUpload(msg.filename, msg.base64, msg.force === true);
+        break;
+      case "memory_list":
+        await this.publishMemoryStatus();
+        break;
+      case "memory_forget":
+        await this.handleMemoryForget(msg.id);
+        break;
+      case "memory_clear":
+        await this.handleMemoryClear();
+        break;
     }
+  }
+
+  private memoryKey(): string {
+    return this.deviceMemoryId || this.id;
+  }
+
+  private async publishMemoryStatus(): Promise<void> {
+    if (!this.memory) return;
+    const status = await this.memory.getStatus(this.memoryKey());
+    this.send({
+      type: "memory_status",
+      count: status.count,
+      userName: status.userName,
+      entries: status.entries,
+    });
+  }
+
+  private async handleMemoryLearn(text: string, title?: string, force = false): Promise<void> {
+    if (!this.memory) {
+      this.send({ type: "error", message: "Pamięć kontekstowa wyłączona na serwerze." });
+      return;
+    }
+    try {
+      const entry = await this.memory.learnText(this.memoryKey(), text, { title, force });
+      this.send({ type: "memory_learned", id: entry.id, title: entry.title, count: await this.memory.count(this.memoryKey()) });
+      await this.publishMemoryStatus();
+    } catch (err) {
+      this.send({ type: "error", message: err instanceof Error ? err.message : String(err) });
+    }
+  }
+
+  private async handleMemoryUpload(filename: string, base64: string, force = false): Promise<void> {
+    if (!this.memory) {
+      this.send({ type: "error", message: "Pamięć kontekstowa wyłączona na serwerze." });
+      return;
+    }
+    try {
+      const data = Buffer.from(base64, "base64");
+      const entry = await this.memory.ingestFile(this.memoryKey(), filename, data, force);
+      this.send({ type: "memory_learned", id: entry.id, title: entry.title, count: await this.memory.count(this.memoryKey()) });
+      await this.publishMemoryStatus();
+    } catch (err) {
+      this.send({ type: "error", message: err instanceof Error ? err.message : String(err) });
+    }
+  }
+
+  private async handleMemoryForget(entryId: string): Promise<void> {
+    if (!this.memory) return;
+    await this.memory.forget(this.memoryKey(), entryId);
+    await this.publishMemoryStatus();
+  }
+
+  private async handleMemoryClear(): Promise<void> {
+    if (!this.memory) return;
+    const n = await this.memory.clear(this.memoryKey());
+    await this.publishMemoryStatus();
+    await this.speak(`Wyczyszczono pamięć. Usunięto ${n} wpisów.`);
+  }
+
+  private async tryMemoryTurn(transcript: string): Promise<boolean> {
+    if (!this.memory) return false;
+    const key = this.memoryKey();
+
+    if (isMemoryClearQuery(transcript)) {
+      await this.handleMemoryClear();
+      return true;
+    }
+
+    if (isMemoryListQuery(transcript)) {
+      const reply = await memoryListReply(this.memory, key, this.agentSkin);
+      await this.speak(reply, transcript);
+      return true;
+    }
+
+    const learnText = parseLearnPayload(transcript);
+    if (learnText) {
+      const entry = await this.memory.learnText(key, learnText, { force: true });
+      await this.publishMemoryStatus();
+      await this.speak(`Zapamiętałem: ${entry.title}.`, transcript);
+      return true;
+    }
+
+    if (isForceLearnQuery(transcript)) {
+      const bundle = [this.lastUserTranscript, this.lastAssistantText].filter(Boolean).join("\n\n");
+      if (bundle.trim().length < 8) {
+        await this.speak(
+          "Nie mam jeszcze rozmowy do nauki. Powiedz «zapamiętaj, że…» albo dodaj plik w ustawieniach.",
+          transcript,
+        );
+        return true;
+      }
+      const entry = await this.memory.learnText(key, bundle, {
+        title: "Wymuszone uczenie z rozmowy",
+        kind: "note",
+        force: true,
+      });
+      await this.publishMemoryStatus();
+      await this.speak(`Wymusiłem naukę — zapisano: ${entry.title}.`, transcript);
+      return true;
+    }
+
+    return false;
+  }
+
+  private async tryTarsTraitsTurn(transcript: string): Promise<boolean> {
+    if (this.agentSkin !== "tars") return false;
+
+    const req = parseTarsTraitCommand(transcript);
+    if (!req) {
+      const t = transcript.toLowerCase();
+      const looksLikeConfig =
+        /\btars\b/.test(t) &&
+        /ustaw|poziom|zwi[eę]ksz|zmniejsz|humor|szczer|sarkazm|zart|żart|reguluj|konfigur/.test(t);
+      if (!looksLikeConfig) return false;
+      const current = normalizeTarsTraits(this.deviceContext.tarsTraits);
+      await this.speak(tarsTraitUnknownReply(transcript, current), transcript, true);
+      return true;
+    }
+
+    const current = normalizeTarsTraits(this.deviceContext.tarsTraits);
+
+    const { traits, from, to } = applyTarsTraitChange(current, req);
+    this.deviceContext.tarsTraits = traits;
+    this.send({
+      type: "tars_traits_updated",
+      honesty: traits.honesty,
+      humor: traits.humor,
+      sarcasm: traits.sarcasm,
+      changed: req.trait,
+      from,
+      to,
+    });
+    log.info(
+      `session ${this.id}: TARS ${req.trait} ${from}→${to} (H${traits.honesty}/Hu${traits.humor}/S${traits.sarcasm})`,
+    );
+
+    const reply = tarsTraitChangeReply(req.trait, from, to, traits);
+    await this.speak(reply, transcript, true);
+    return true;
+  }
+
+  private async finalizeSpeech(text: string, tarsAlreadyShaped = false): Promise<string> {
+    let spoken = polishForSpeech(text);
+    if (this.agentSkin === "hal9000") {
+      const userName = this.memory ? await this.memory.getUserName(this.memoryKey()) : undefined;
+      spoken = sanitizeHalSpeech(spoken, this.agentSkin, userName);
+    }
+    if (this.agentSkin === "tars" && !tarsAlreadyShaped) {
+      const traits = normalizeTarsTraits(this.deviceContext.tarsTraits);
+      spoken = shapeTarsSpeech(spoken, traits, "llm");
+    }
+    return spoken;
   }
 
   private async resetConversation(reason: string): Promise<void> {
@@ -332,7 +528,7 @@ export class Session {
         timeoutMs,
         needsCloudBrain(intent)
           ? "Agent chmurowy nie zdążył w limicie czasu. Spróbuj krótszej prośby albo poczekaj i powtórz."
-          : "Lokalny model nie odpowiedział na czas. Spróbuj ponownie albo poproś o pomoc z kodem.",
+          : "Lokalny model nie odpowiedział na czas. Spróbuj ponownie — krótsze pytanie albo prośba o kod włączy agenta chmurowego.",
       );
       this.markTurnComplete();
     } catch (err) {
@@ -355,24 +551,44 @@ export class Session {
   }
 
   private async runTurn(transcript: string, intent: Intent): Promise<void> {
+    this.lastUserTranscript = transcript.trim();
     if (!needsCloudBrain(intent)) {
+      if (await this.tryTarsTraitsTurn(transcript)) return;
+      if (await this.tryMemoryTurn(transcript)) return;
       if (isLocationQuery(transcript)) await this.resolveLocationLabel();
       const instant = tryDeviceReply(transcript, this.deviceContext, this.agentSkin);
       if (instant) {
         log.info(`session ${this.id}: device fast-path reply`);
-        await this.speak(instant, transcript);
+        await this.speak(instant, transcript, true);
         return;
       }
       const chat = tryChatReply(transcript, this.deviceContext, this.agentSkin);
       if (chat) {
         log.info(`session ${this.id}: chat template reply`);
-        await this.speak(chat, transcript);
+        await this.speak(chat, transcript, true);
         return;
       }
     }
 
     const contextHint = formatDeviceContext(this.deviceContext);
     const enriched = contextHint ? `${transcript}\n\n[Device context: ${contextHint}]` : transcript;
+    let memoryBlock = this.memory
+      ? await this.memory.getPromptBlock(this.memoryKey(), transcript)
+      : "";
+
+    if (this.cfg.webSearchEnabled && shouldPrefetchWeb(transcript, intent, memoryBlock)) {
+      try {
+        const q = extractSearchQuery(transcript);
+        this.setStatus("thinking", "web");
+        const web = await searchWeb(q, this.cfg);
+        const webBlock = formatWebPromptBlock(web);
+        memoryBlock = [memoryBlock, webBlock].filter(Boolean).join("\n\n");
+        log.info(`session ${this.id}: web "${q}" -> ${web.hits.length} hits (${web.provider})`);
+      } catch (err) {
+        log.warn(`session ${this.id}: web search failed`, err);
+        memoryBlock = [memoryBlock, "WYSZUKIWANIE INTERNETU: nie udało się pobrać wyników."].filter(Boolean).join("\n\n");
+      }
+    }
 
     const cloudTurn = needsCloudBrain(intent);
     if (cloudTurn) this.startCloudProgress();
@@ -383,6 +599,7 @@ export class Session {
         isCancelled: () => this.cancelled,
         skin: this.agentSkin,
         tarsTraits: this.deviceContext.tarsTraits,
+        memoryBlock,
       });
       if (this.cancelled) return;
       await this.speak(result.spoken, transcript);
@@ -459,7 +676,7 @@ export class Session {
     const prevState = this.phase;
     const prevDetail = this.phaseDetail;
     try {
-      const spoken = polishForSpeech(text);
+      const spoken = await this.finalizeSpeech(text);
       log.info(`session ${this.id}: aside chars=${spoken.length}`);
       const { pcm, sampleRate } = await this.tts.synthesize(spoken, this.agentSkin);
       if (pcm.length === 0 || this.cancelled || !this.isWsOpen()) return;
@@ -491,9 +708,10 @@ export class Session {
     this.setStatus("idle");
   }
 
-  private async speak(text: string, transcript?: string): Promise<void> {
+  private async speak(text: string, transcript?: string, tarsAlreadyShaped = false): Promise<void> {
     if (this.cancelled) return;
-    const spoken = polishForSpeech(text);
+    const spoken = await this.finalizeSpeech(text, tarsAlreadyShaped);
+    this.lastAssistantText = spoken;
     log.info(`session ${this.id}: speak chars=${spoken.length} "${spoken.slice(0, 100)}${spoken.length > 100 ? "…" : ""}"`);
     const { pcm, sampleRate } = await this.tts.synthesize(spoken, this.agentSkin);
     if (pcm.length === 0 || this.cancelled) return;

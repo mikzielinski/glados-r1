@@ -5,6 +5,8 @@ dist/
 .env
 .integrations.json
 backend/.integrations.json
+backend/.oko-local.json
+backend/data/memory/*.json
 
 # Android / Gradle
 android/.gradle/

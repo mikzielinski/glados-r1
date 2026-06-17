@@ -23,7 +23,8 @@
         <ul class="checklist">
           <li>GitHub — OAuth App lub Personal Access Token</li>
           <li>UiPath — External Application w Automation Cloud</li>
-          <li>Automatyczna konfiguracja skilli GLaDOS (bez webhooków n8n)</li>
+          <li>Automatyczna konfiguracja skilli OKO (lokalne + opcjonalnie n8n)</li>
+          <li>Pamięć wiedzy — PDF/TXT + wyszukiwanie w internecie</li>
         </ul>
         <div class="actions">
           <button class="btn primary" data-next>Zacznij →</button>
@@ -95,8 +96,61 @@
         </div>
       </section>
 
-      <!-- Step 3 Summary -->
-      <section class="step" data-step="3" id="summary">
+      <!-- Step 3 Memory -->
+      <section class="step" data-step="3" id="memory">
+        <h2>Pamięć &amp; pliki wiedzy</h2>
+        <p class="lead">Globalna baza wiedzy OKO — PDF/TXT trafiają do pamięci kontekstowej (wszystkie urządzenia).</p>
+        <div class="status show" id="memory-count">Ładowanie…</div>
+        <label>Notatka / fakt
+          <textarea id="memory-text" rows="4" placeholder="np. Preferuję odpowiedzi po polsku. Projekt X używa Kotlin…"></textarea>
+        </label>
+        <div class="actions row">
+          <button class="btn primary" id="memory-learn">Zapamiętaj notatkę</button>
+          <label class="btn">
+            Dodaj plik PDF/TXT
+            <input id="memory-file" type="file" accept=".pdf,.txt,.md,.csv,.json" hidden />
+          </label>
+        </div>
+        <div class="status" id="memory-status"></div>
+        <div class="actions">
+          <button class="btn ghost" data-prev>← Wstecz</button>
+          <button class="btn primary" data-next>Dalej →</button>
+        </div>
+      </section>
+
+      <!-- Step 4 Skills -->
+      <section class="step" data-step="4" id="skills">
+        <h2>Skille &amp; n8n</h2>
+        <p class="lead">Import skilli (webhooki n8n lub lokalne endpointy). Agent chmurowy użyje ich przy zadaniach code/net.</p>
+
+        <label>n8n Base URL (opcjonalnie)<input id="n8n-base" placeholder="https://n8n.example.com" /></label>
+        <label>n8n Auth header (opcjonalnie)<input id="n8n-auth" placeholder="Authorization: Bearer …" /></label>
+        <button class="btn" id="n8n-save">Zapisz n8n</button>
+
+        <label>Serper API key (lepsze Google — opcjonalnie)<input id="serper-key" type="password" placeholder="…" /></label>
+        <label class="row-check"><input type="checkbox" id="web-enabled" checked /> Wyszukiwanie internetowe włączone</label>
+        <button class="btn" id="web-save">Zapisz wyszukiwanie</button>
+
+        <div class="hint box">
+          Import JSON: tablica skilli lub <code>{ "skills": [ … ] }</code> jak w <code>skills/skills.json</code>.
+        </div>
+        <label>Import skilli (JSON)
+          <textarea id="skills-json" rows="6" placeholder='[{"name":"lights","description":"…","webhook":"webhook/lights"}]'></textarea>
+        </label>
+        <div class="actions row">
+          <button class="btn primary" id="skills-import">Importuj (merge)</button>
+          <button class="btn" id="skills-reload">Odśwież listę</button>
+        </div>
+        <ul class="skill-list" id="skills-list"></ul>
+        <div class="status" id="skills-status"></div>
+        <div class="actions">
+          <button class="btn ghost" data-prev>← Wstecz</button>
+          <button class="btn primary" data-next>Dalej →</button>
+        </div>
+      </section>
+
+      <!-- Step 5 Summary -->
+      <section class="step" data-step="5" id="summary">
         <h2>Podsumowanie</h2>
         <div class="cards" id="summary-cards"></div>
         <div class="actions row">
@@ -104,7 +158,7 @@
           <button class="btn primary" id="finish">Zakończ i aktywuj skille</button>
         </div>
         <div class="status" id="finish-status"></div>
-        <p class="muted">Po zakończeniu GLaDOS używa lokalnych endpointów — n8n nie jest wymagane.</p>
+        <p class="muted">Po zakończeniu OKO używa lokalnych endpointów + opcjonalnie n8n dla własnych webhooków.</p>
       </section>
     </main>
   </div>

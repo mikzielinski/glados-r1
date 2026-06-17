@@ -28,7 +28,7 @@ export function tryDeviceReply(
     skin === "tars" ? tarsifyReply(text, traits, kind) : text;
 
   if (matches(t, ["battery", "bateria", "baterii", "charge", "power", "naładow", "naladow", "procent"])) {
-    if (ctx.batteryPct != null) return say(batteryReply(skin, ctx.batteryPct), "factual");
+    if (ctx.batteryPct != null) return say(batteryReply(skin, ctx.batteryPct, traits), "factual");
     return say(batteryUnknownReply(skin), "factual");
   }
 
@@ -110,7 +110,7 @@ export function tryDeviceReply(
     "tell me about yourself",
     "your personality",
   ])) {
-    return say(personalityReply(skin), "social");
+    return say(personalityReply(skin, traits), "social");
   }
 
   if (matches(t, ["kim jesteś", "kim jestes", "kto to ty", "who are you", "co to glados", "glados", "hal", "tars"])) {

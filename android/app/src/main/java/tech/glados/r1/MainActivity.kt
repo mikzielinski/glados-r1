@@ -1,6 +1,10 @@
 package tech.glados.r1
 
 import android.Manifest
+import android.content.Intent
+import android.net.Uri
+import android.provider.OpenableColumns
+import android.util.Base64
 import android.content.pm.PackageManager
 import android.net.wifi.WifiManager
 import android.os.Bundle
@@ -18,7 +22,11 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import android.animation.ValueAnimator
+import android.view.View
 import android.widget.EditText
+import android.widget.ProgressBar
+import android.widget.SeekBar
 import tech.glados.r1.databinding.ActivityMainBinding
 import tech.glados.r1.ui.LensView
 import java.io.File
@@ -57,6 +65,20 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
     private val pendingTtsAudio = ArrayList<ByteArray>()
     private var locationRefreshRunnable: Runnable? = null
     private var agentLogLabel = "OKO"
+    private var memoryCountLabel: android.widget.TextView? = null
+    private var tarsHonestySeekRef: SeekBar? = null
+    private var tarsHumorSeekRef: SeekBar? = null
+    private var tarsSarcasmSeekRef: SeekBar? = null
+    private var tarsHonestyLabelRef: android.widget.TextView? = null
+    private var tarsHumorLabelRef: android.widget.TextView? = null
+    private var tarsSarcasmLabelRef: android.widget.TextView? = null
+    private var tarsHudHideRunnable: Runnable? = null
+
+    private val memoryFilePicker =
+        registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            if (uri == null) return@registerForActivityResult
+            ingestMemoryFile(uri)
+        }
 
     private val micPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -86,6 +108,7 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        applyKioskWindowFlags()
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -170,6 +193,43 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
     override fun onResume() {
         super.onResume()
         binding.root.requestFocus()
+        // Recover from stuck NotificationShade after keylayout remap.
+        dismissSystemOverlays()
+    }
+
+    private fun dismissSystemOverlays() {
+        try {
+            @Suppress("DEPRECATION")
+            sendBroadcast(Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS))
+        } catch (_: Exception) {
+        }
+        try {
+            @Suppress("DEPRECATION")
+            window.decorView.systemUiVisibility = (
+                android.view.View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
+                    android.view.View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                )
+        } catch (_: Exception) {
+        }
+        mainHandler.postDelayed({ collapseStatusBarPanels() }, 500)
+    }
+
+    private fun applyKioskWindowFlags() {
+        @Suppress("DEPRECATION")
+        window.addFlags(
+            WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+                WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
+                WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD or
+                WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
+        )
+    }
+
+    private fun collapseStatusBarPanels() {
+        try {
+            val statusBarService = getSystemService("statusbar") ?: return
+            statusBarService.javaClass.getMethod("collapsePanels").invoke(statusBarService)
+        } catch (_: Exception) {
+        }
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
@@ -528,7 +588,35 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
                 appendLog("!", event.message)
                 setStatus(event.message)
             }
+            is Protocol.ServerEvent.MemoryStatus -> {
+                memoryCountLabel?.text = getString(R.string.settings_memory_count, event.count)
+            }
+            is Protocol.ServerEvent.MemoryLearned -> {
+                memoryCountLabel?.text = getString(R.string.settings_memory_count, event.count)
+                setStatus(getString(R.string.settings_memory_learn_ok, event.count))
+            }
+            is Protocol.ServerEvent.TarsTraitsUpdated -> onTarsTraitsUpdated(event)
             else -> {}
+        }
+    }
+
+    private fun ingestMemoryFile(uri: Uri) {
+        try {
+            val name = contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                val idx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                if (idx >= 0 && cursor.moveToFirst()) cursor.getString(idx) else null
+            } ?: "upload.bin"
+            val bytes = contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                ?: throw IllegalStateException("Nie można odczytać pliku")
+            if (bytes.isEmpty()) throw IllegalStateException("Plik jest pusty")
+            val b64 = Base64.encodeToString(bytes, Base64.NO_WRAP)
+            if (!client.sendText(Protocol.memoryUpload(name, b64, force = true))) {
+                setStatus(getString(R.string.status_disconnected))
+            } else {
+                setStatus(getString(R.string.settings_memory_upload_ok, name))
+            }
+        } catch (e: Exception) {
+            setStatus(e.message ?: "Błąd wczytywania pliku")
         }
     }
 
@@ -702,6 +790,41 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
         humorSeek.setOnSeekBarChangeListener(updateSlider)
         sarcasmSeek.setOnSeekBarChangeListener(updateSlider)
 
+        val memoryCount = view.findViewById<android.widget.TextView>(R.id.memoryCountLabel)
+        val memoryNoteInput = view.findViewById<EditText>(R.id.memoryNoteInput)
+        memoryCountLabel = memoryCount
+        memoryCount.text = getString(R.string.settings_memory_count, 0)
+        if (client.isConnected) client.sendText(Protocol.memoryList())
+
+        tarsHonestySeekRef = honestySeek
+        tarsHumorSeekRef = humorSeek
+        tarsSarcasmSeekRef = sarcasmSeek
+        tarsHonestyLabelRef = honestyLabel
+        tarsHumorLabelRef = humorLabel
+        tarsSarcasmLabelRef = sarcasmLabel
+
+        view.findViewById<android.widget.Button>(R.id.memoryLearnButton).setOnClickListener {
+            val text = memoryNoteInput.text.toString().trim()
+            if (text.isEmpty()) {
+                setStatus(getString(R.string.settings_memory_hint))
+                return@setOnClickListener
+            }
+            client.sendText(Protocol.memoryLearn(text, force = true))
+            memoryNoteInput.text.clear()
+        }
+
+        view.findViewById<android.widget.Button>(R.id.memoryUploadButton).setOnClickListener {
+            memoryFilePicker.launch(arrayOf("application/pdf", "text/plain", "text/markdown"))
+        }
+
+        view.findViewById<android.widget.Button>(R.id.memoryForceButton).setOnClickListener {
+            client.sendText(Protocol.textInput("wymuś naukę"))
+        }
+
+        view.findViewById<android.widget.Button>(R.id.memoryClearButton).setOnClickListener {
+            client.sendText(Protocol.memoryClear())
+        }
+
         val dialog = AlertDialog.Builder(this)
             .setTitle(getString(R.string.settings_title))
             .setView(view)
@@ -734,7 +857,105 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
             client.connect()
         }
 
+        dialog.setOnDismissListener {
+            memoryCountLabel = null
+            tarsHonestySeekRef = null
+            tarsHumorSeekRef = null
+            tarsSarcasmSeekRef = null
+            tarsHonestyLabelRef = null
+            tarsHumorLabelRef = null
+            tarsSarcasmLabelRef = null
+        }
+
         dialog.show()
+    }
+
+    private fun onTarsTraitsUpdated(event: Protocol.ServerEvent.TarsTraitsUpdated) {
+        prefs.tarsHonesty = event.honesty
+        prefs.tarsHumor = event.humor
+        prefs.tarsSarcasm = event.sarcasm
+
+        tarsHonestySeekRef?.progress = event.honesty
+        tarsHumorSeekRef?.progress = event.humor
+        tarsSarcasmSeekRef?.progress = event.sarcasm
+        tarsHonestyLabelRef?.text = getString(R.string.settings_tars_honesty, event.honesty)
+        tarsHumorLabelRef?.text = getString(R.string.settings_tars_humor, event.humor)
+        tarsSarcasmLabelRef?.text = getString(R.string.settings_tars_sarcasm, event.sarcasm)
+
+        showTarsTraitsHud(event)
+    }
+
+    private fun showTarsTraitsHud(event: Protocol.ServerEvent.TarsTraitsUpdated) {
+        val root = findViewById<View>(R.id.tarsTraitsHudRoot) ?: return
+        val honestyBar = findViewById<ProgressBar>(R.id.tarsHudHonestyBar)
+        val humorBar = findViewById<ProgressBar>(R.id.tarsHudHumorBar)
+        val sarcasmBar = findViewById<ProgressBar>(R.id.tarsHudSarcasmBar)
+        val honestyLabel = findViewById<android.widget.TextView>(R.id.tarsHudHonestyLabel)
+        val humorLabel = findViewById<android.widget.TextView>(R.id.tarsHudHumorLabel)
+        val sarcasmLabel = findViewById<android.widget.TextView>(R.id.tarsHudSarcasmLabel)
+        val changedLabel = findViewById<android.widget.TextView>(R.id.tarsHudChanged)
+
+        changedLabel.text = when (event.changed) {
+            "honesty" -> getString(R.string.tars_hud_changed_honesty, event.from, event.to)
+            "humor" -> getString(R.string.tars_hud_changed_humor, event.from, event.to)
+            "sarcasm" -> getString(R.string.tars_hud_changed_sarcasm, event.from, event.to)
+            else -> ""
+        }
+
+        animateTraitBar(
+            honestyBar,
+            if (event.changed == "honesty") event.from else honestyBar.progress,
+            event.honesty,
+        ) { honestyLabel.text = getString(R.string.settings_tars_honesty, event.honesty) }
+        animateTraitBar(
+            humorBar,
+            if (event.changed == "humor") event.from else humorBar.progress,
+            event.humor,
+        ) { humorLabel.text = getString(R.string.settings_tars_humor, event.humor) }
+        animateTraitBar(
+            sarcasmBar,
+            if (event.changed == "sarcasm") event.from else sarcasmBar.progress,
+            event.sarcasm,
+        ) { sarcasmLabel.text = getString(R.string.settings_tars_sarcasm, event.sarcasm) }
+
+        tarsHudHideRunnable?.let { mainHandler.removeCallbacks(it) }
+        root.animate().cancel()
+        root.alpha = 0f
+        root.visibility = View.VISIBLE
+        root.animate().alpha(1f).setDuration(220).start()
+        tarsHudHideRunnable = Runnable {
+            root.animate()
+                .alpha(0f)
+                .setDuration(420)
+                .withEndAction { root.visibility = View.GONE }
+                .start()
+        }
+        mainHandler.postDelayed(tarsHudHideRunnable!!, 3600)
+    }
+
+    private fun animateTraitBar(
+        bar: ProgressBar,
+        from: Int,
+        to: Int,
+        onEnd: () -> Unit,
+    ) {
+        if (from == to) {
+            bar.progress = to
+            onEnd()
+            return
+        }
+        ValueAnimator.ofInt(from.coerceIn(0, 100), to.coerceIn(0, 100)).apply {
+            duration = 720
+            addUpdateListener { anim ->
+                bar.progress = anim.animatedValue as Int
+            }
+            addListener(object : android.animation.AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: android.animation.Animator) {
+                    onEnd()
+                }
+            })
+            start()
+        }
     }
 
     companion object {

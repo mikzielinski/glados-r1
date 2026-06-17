@@ -17,6 +17,13 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <include
+        android:id="@+id/tarsTraitsHud"
+        layout="@layout/tars_traits_hud"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|center_horizontal" />
+
     <LinearLayout
         android:id="@+id/contentColumn"
         android:layout_width="match_parent"

@@ -5,6 +5,7 @@ import type { Config } from "./config.js";
 import { logger } from "./logger.js";
 import { SessionManager } from "./session-manager.js";
 import { SkillRegistry } from "./skills.js";
+import { MemoryStore } from "./memory-store.js";
 import { StandardsRegistry } from "./standards.js";
 import { WhisperStt } from "./stt.js";
 import { GladosTts } from "./tts.js";
@@ -25,12 +26,13 @@ export function startServer(cfg: Config): Server {
   const skills = new SkillRegistry(cfg);
   const standards = new StandardsRegistry(cfg);
   void standards.refreshIfStale(0);
+  const memory = new MemoryStore(cfg);
   void skills.getCustomTools();
   const integrations = new IntegrationsStore(cfg.integrationsFile);
   void integrations.load();
-  const setup = new SetupRoutes(cfg, integrations);
+  const setup = new SetupRoutes(cfg, integrations, memory, skills, standards);
   setInterval(cleanupOAuthStates, 60_000).unref();
-  const sessions = new SessionManager(cfg, stt, tts, skills, standards);
+  const sessions = new SessionManager(cfg, stt, tts, skills, standards, memory);
 
   const http = createServer(async (req, res) => {
     const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
@@ -46,6 +48,9 @@ export function startServer(cfg: Config): Server {
         repo: cfg.repoPath,
         brainMode: cfg.brainMode,
         standards: standards.count,
+        memoryDir: cfg.memoryDir,
+        webSearch: cfg.webSearchEnabled,
+        serper: Boolean(cfg.serperApiKey),
         skills: skills.getNames(),
         integrations: integrations.status(),
         setupUrl: `${cfg.setupBaseUrl.replace(/\/$/, "")}/setup`,

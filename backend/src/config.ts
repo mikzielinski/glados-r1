@@ -1,7 +1,8 @@
 import "dotenv/config";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { assertLocalOllamaUrl } from "./slm-brain.js";
+import type { OkoLocalConfig } from "./local-config.js";
 
 function req(name: string): string {
   const v = process.env[name];
@@ -69,8 +70,15 @@ export interface Config {
   skillsFile: string;
   standardsDir: string;
   standardsMaxChars: number;
+  memoryDir: string;
+  memoryMaxChars: number;
+  memoryMaxEntryChars: number;
+  memoryMaxEntries: number;
+  memoryMaxUploadBytes: number;
   n8nBaseUrl: string;
   n8nAuthHeader: string;
+  serperApiKey: string;
+  webSearchEnabled: boolean;
   integrationsFile: string;
   setupBaseUrl: string;
   setupGithubClientId: string;
@@ -87,6 +95,7 @@ export function loadConfig(): Config {
   const needsCursor = brainMode === "cursor" || brainMode === "hybrid";
   const apiKey = needsCursor ? req("CURSOR_API_KEY") : opt("CURSOR_API_KEY");
   const repoPath = needsCursor ? req("REPO_PATH") : opt("REPO_PATH", process.cwd());
+  const local = loadLocalOverrides();
   return {
     cursorApiKey: apiKey,
     cursorModel: opt("CURSOR_MODEL", "composer-2.5"),
@@ -131,13 +140,30 @@ export function loadConfig(): Config {
     skillsFile: opt("SKILLS_FILE", "skills/skills.json"),
     standardsDir: opt("STANDARDS_DIR", resolve(process.cwd(), "../standards")),
     standardsMaxChars: num("STANDARDS_MAX_CHARS", 14_000),
-    n8nBaseUrl: opt("N8N_BASE_URL"),
-    n8nAuthHeader: opt("N8N_AUTH_HEADER"),
+    memoryDir: opt("MEMORY_DIR", resolve(process.cwd(), "data/memory")),
+    memoryMaxChars: num("MEMORY_MAX_CHARS", 8000),
+    memoryMaxEntryChars: num("MEMORY_MAX_ENTRY_CHARS", 12_000),
+    memoryMaxEntries: num("MEMORY_MAX_ENTRIES", 200),
+    memoryMaxUploadBytes: num("MEMORY_MAX_UPLOAD_BYTES", 4 * 1024 * 1024),
+    n8nBaseUrl: local.n8nBaseUrl || opt("N8N_BASE_URL"),
+    n8nAuthHeader: local.n8nAuthHeader || opt("N8N_AUTH_HEADER"),
+    serperApiKey: local.serperApiKey || opt("SERPER_API_KEY"),
+    webSearchEnabled: local.webSearchEnabled ?? opt("WEB_SEARCH_ENABLED", "true") !== "false",
     integrationsFile: opt("INTEGRATIONS_FILE", ".integrations.json"),
     setupBaseUrl: opt("SETUP_BASE_URL", `http://127.0.0.1:${num("PORT", 8787)}`),
     setupGithubClientId: opt("SETUP_GITHUB_CLIENT_ID"),
     setupGithubClientSecret: opt("SETUP_GITHUB_CLIENT_SECRET"),
   };
+}
+
+function loadLocalOverrides(): OkoLocalConfig {
+  const path = resolve(process.cwd(), ".oko-local.json");
+  if (!existsSync(path)) return {};
+  try {
+    return JSON.parse(readFileSync(path, "utf8")) as OkoLocalConfig;
+  } catch {
+    return {};
+  }
 }
 
 function parseTtsMode(raw: string): Config["ttsMode"] {

@@ -9,9 +9,11 @@ client for the backend brain.
   running `./scripts/fix-r1-side-button.sh` (see below). On stock CipherOS the
   side button is **KEYCODE_POWER** and Android handles it as power — OKO never
   receives it.
-- **Streams microphone audio** (16 kHz mono PCM16) to the backend over a
-  WebSocket while you hold.
-- **Plays back** the GLaDOS TTS audio that streams back.
+- **Agent skins** — HAL-9000, GLaDOS, TARS (SET → radio + TARS sliders)
+- **TARS voice config** — say *„Tars, ustaw poziom żartu na 60%”* (animated HUD overlay)
+- **Contextual memory** — learn, upload PDF/TXT, force-learn, clear (SET → Pamięć)
+- **Streams microphone audio** (16 kHz mono PCM16) to the backend over WebSocket while you hold.
+- **Plays back** TTS audio for the active skin.
 - **Scroll wheel** (DPAD up/down) scrolls the transcript log — scrolls the `ScrollView`, not just the text field.
 - **Auto-reconnects** with backoff and **resumes** the agent across reconnects
   (the backend hands back an `agentId`, stored in `Prefs`).
@@ -60,9 +62,12 @@ Grant the microphone permission when prompted.
 
 ## Make it the launcher (optional kiosk)
 
-Uncomment the `HOME`/`DEFAULT` intent-filter in
-[`app/src/main/AndroidManifest.xml`](app/src/main/AndroidManifest.xml), rebuild,
-reinstall, then pick GLaDOS R1 as the default Home app in CipherOS settings.
+```bash
+./scripts/setup-r1-kiosk.sh <serial>   # HOME launcher + boot hook
+./scripts/unfix-r1-side-button.sh <serial>   # revert side-button remap if needed
+```
+
+Or uncomment the `HOME` intent-filter in [`AndroidManifest.xml`](app/src/main/AndroidManifest.xml), rebuild, reinstall, pick OKO as Home app.
 
 ## Side button (PTT) on CipherOS
 

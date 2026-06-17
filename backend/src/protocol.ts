@@ -24,6 +24,7 @@ export type ClientMessage =
       clientVersion: string;
       sessionId?: string;
       skin?: string;
+      memoryDeviceId?: string;
       tarsTraits?: { honesty?: number; humor?: number; sarcasm?: number };
     }
   | { type: "reset_session" }
@@ -40,7 +41,12 @@ export type ClientMessage =
       locationStatus?: string;
       photoBase64?: string;
       tarsTraits?: { honesty?: number; humor?: number; sarcasm?: number };
-    };
+    }
+  | { type: "memory_learn"; text: string; title?: string; force?: boolean }
+  | { type: "memory_upload"; filename: string; mime?: string; base64: string; force?: boolean }
+  | { type: "memory_list" }
+  | { type: "memory_forget"; id: string }
+  | { type: "memory_clear" };
 
 /** Messages sent by the backend to the R1 client. */
 export type ServerMessage =
@@ -54,7 +60,30 @@ export type ServerMessage =
   | { type: "error"; message: string }
   | { type: "ptt_ack" }
   | { type: "ptt_rejected"; reason: string }
-  | { type: "pong" };
+  | { type: "pong" }
+  | {
+      type: "memory_status";
+      count: number;
+      userName?: string;
+      entries: Array<{
+        id: string;
+        kind: string;
+        title: string;
+        preview: string;
+        source?: string;
+        updatedAt: number;
+      }>;
+    }
+  | { type: "memory_learned"; id: string; title: string; count: number }
+  | {
+      type: "tars_traits_updated";
+      honesty: number;
+      humor: number;
+      sarcasm: number;
+      changed: "honesty" | "humor" | "sarcasm";
+      from: number;
+      to: number;
+    };
 
 export function encode(msg: ServerMessage): string {
   return JSON.stringify(msg);

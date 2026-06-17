@@ -26,12 +26,16 @@ R1 speaker ◀── PCM 48 kHz + status ◀────────────
 
 ## Features
 
-- **3 skórki agenta** — osobna persona, kolory HUD i pipeline głosu (HAL / GLaDOS / TARS)
-- **Polski TTS** — poprawna wymowa PL; GLaDOS przez Fish PL clone, HAL/TARS przez `darkman` + ffmpeg FX
-- **Fast-path** — bateria, GPS, sieć, „kim jesteś”, „opowiedz o sobie” bez chmury
-- **TARS sliders** — szczerość, humor, sarkazm (0–100) w SET → wpływ na ton odpowiedzi
-- **Nowa sesja** — przycisk w ustawieniach czyści historię SLM i kontekst agenta
-- **Skills (n8n)** — webhooki jako narzędzia agenta ([backend/README.md](backend/README.md))
+- **3 skórki agenta** — HAL / GLaDOS / TARS: persona, kolory HUD, pipeline głosu
+- **Polski TTS** — Fish PL (GLaDOS), Piper `darkman` + FX (HAL/TARS)
+- **Hybrid brain** — rozmowa ogólna lokalnie (Ollama SLM); kod/GitHub/UiPath w chmurze (Cursor SDK)
+- **Web search** — DuckDuckGo / opcjonalnie Serper, gdy brak danych lokalnych
+- **Pamięć kontekstowa** — głos + PDF/TXT w SET (R1) lub panelu web (`/setup`)
+- **TARS sliders** — szczerość / humor / sarkazm (0–100), ciągła skala tonu
+- **TARS głosem** — *„Tars, ustaw poziom żartu na 60%”* → animacja HUD + potwierdzenie
+- **Setup web** — GitHub, UiPath, pamięć, skille n8n: `http://<backend>:8787/setup`
+- **Kiosk R1** — opcjonalny autostart OKO (`scripts/setup-r1-kiosk.sh`)
+- **Skills** — lokalne (GitHub, UiPath, standards, web_search) + import n8n
 
 ## Voice pipeline (TTS)
 
@@ -83,7 +87,9 @@ Szczegóły: [`backend/README.md`](backend/README.md).
 ./scripts/deploy-r1.sh <serial>   # build + install + launch
 ```
 
-Na R1: **SET** → backend URL (`ws://<mac-ip>:8787/ws`), wybór skórki, suwaki TARS, **Nowa sesja**.
+Na R1: **SET** → backend URL, skórka, suwaki TARS, pamięć, **Nowa sesja**.
+
+Panel integracji (Mac): `http://<ip-mac>:8787/setup`
 
 Szczegóły: [`android/README.md`](android/README.md).
 
