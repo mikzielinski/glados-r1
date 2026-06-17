@@ -3,222 +3,262 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>OKO — Kreator integracji</title>
+  <title>OKO — Panel administracyjny</title>
   <link rel="stylesheet" href="/setup/style.css" />
 </head>
 <body>
-  <div class="shell">
-    <header class="top">
-      <div class="brand">OKO <span>Integracje</span></div>
-      <div class="steps" id="steps"></div>
-    </header>
-
-    <main class="panel">
-      <!-- Step 0 -->
-      <section class="step active" data-step="0">
-        <h1>Kreator GitHub &amp; UiPath</h1>
-        <p class="lead">
-          Połącz repozytoria i Orchestrator bez ręcznego n8n. OAuth lub token — klikasz, autoryzujesz, gotowe.
-        </p>
-        <ul class="checklist">
-          <li>GitHub — OAuth App lub Personal Access Token</li>
-          <li>UiPath — External Application w Automation Cloud</li>
-          <li>Automatyczna konfiguracja skilli OKO (lokalne + opcjonalnie n8n)</li>
-          <li>Pamięć wiedzy — PDF/TXT + wyszukiwanie w internecie</li>
-        </ul>
-        <div class="actions">
-          <button class="btn primary" data-next>Zacznij →</button>
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="logo-ring"></div>
+        <div>
+          <strong>OKO</strong>
+          <span>Control Panel</span>
         </div>
-      </section>
+      </div>
+      <nav class="sidebar-nav" id="nav">
+        <button type="button" class="nav-item active" data-page="dashboard">📊 Pulpit</button>
+        <button type="button" class="nav-item" data-page="integrations">🔌 Integracje</button>
+        <button type="button" class="nav-item" data-page="templates">📄 Szablony docs</button>
+        <button type="button" class="nav-item" data-page="memory">🧠 Pamięć</button>
+        <button type="button" class="nav-item" data-page="standards">📐 Standardy kodu</button>
+        <button type="button" class="nav-item" data-page="skills">⚡ Skille</button>
+        <button type="button" class="nav-item" data-page="settings">⚙️ Ustawienia</button>
+      </nav>
+      <div class="sidebar-foot">
+        <div class="sys-pill" id="sys-status">Ładowanie…</div>
+      </div>
+    </aside>
 
-      <!-- Step 1 GitHub -->
-      <section class="step" data-step="1" id="github">
-        <h2>GitHub</h2>
-        <p class="lead">Wybierz OAuth (zalecane) albo wklej PAT.</p>
-
-        <div class="tabs">
-          <button class="tab active" data-tab="gh-oauth">OAuth App</button>
-          <button class="tab" data-tab="gh-pat">Personal Token</button>
+    <div class="main">
+      <header class="topbar">
+        <button type="button" class="btn icon-only mobile-menu" id="menu-toggle" aria-label="Menu">☰</button>
+        <div>
+          <h1 id="page-title">Pulpit</h1>
+          <p class="page-sub" id="page-sub">Stan systemu OKO na Macu</p>
         </div>
+        <div class="topbar-actions">
+          <button type="button" class="btn" id="btn-refresh">↻ Odśwież</button>
+          <button type="button" class="btn primary" id="btn-test-all">Test połączeń</button>
+        </div>
+      </header>
 
-        <div class="tab-panel active" id="gh-oauth">
-          <div class="hint box">
-            <strong>GitHub → Settings → Developer settings → OAuth Apps → New</strong><br />
-            Callback URL: <code id="gh-callback">…</code>
+      <div class="content">
+        <!-- Dashboard -->
+        <section class="page active" data-page="dashboard">
+          <div class="stat-grid" id="dash-stats"></div>
+          <div class="grid-2">
+            <div class="card-block">
+              <h2>Szybkie akcje</h2>
+              <div class="chip-row">
+                <button type="button" class="chip" data-goto="integrations">Połącz GitHub</button>
+                <button type="button" class="chip" data-goto="templates">Dodaj szablon</button>
+                <button type="button" class="chip" data-goto="standards">Wgraj standard PDF</button>
+                <button type="button" class="chip" data-goto="skills">Import skilli</button>
+              </div>
+            </div>
+            <div class="card-block">
+              <h2>System</h2>
+              <dl class="meta-list" id="sys-meta"></dl>
+            </div>
           </div>
-          <label>Client ID<input id="gh-client-id" autocomplete="off" /></label>
-          <label>Client Secret<input id="gh-client-secret" type="password" autocomplete="off" /></label>
-          <div class="actions row">
-            <button class="btn" id="gh-save-config">Zapisz dane OAuth</button>
-            <button class="btn primary" id="gh-oauth-start">Połącz przez GitHub →</button>
+          <div class="card-block">
+            <h2>Skille aktywne</h2>
+            <div class="tag-row" id="dash-skills"></div>
           </div>
-        </div>
+        </section>
 
-        <div class="tab-panel" id="gh-pat">
-          <label>Personal Access Token (classic lub fine-grained)
-            <input id="gh-pat-token" type="password" placeholder="ghp_…" autocomplete="off" />
-          </label>
-          <button class="btn primary" id="gh-pat-save">Zapisz i przetestuj</button>
-        </div>
+        <!-- Integrations -->
+        <section class="page" data-page="integrations">
+          <div class="grid-2">
+            <div class="card-block">
+              <div class="card-head">
+                <h2>GitHub</h2>
+                <span class="badge" id="gh-badge">—</span>
+              </div>
+              <div class="tabs compact">
+                <button type="button" class="tab active" data-tab="gh-oauth">OAuth</button>
+                <button type="button" class="tab" data-tab="gh-pat">Token PAT</button>
+              </div>
+              <div class="tab-panel active" id="gh-oauth">
+                <div class="hint box">Callback: <code id="gh-callback">…</code></div>
+                <label>Client ID<input id="gh-client-id" autocomplete="off" /></label>
+                <label>Client Secret<input id="gh-client-secret" type="password" autocomplete="off" /></label>
+                <div class="btn-row">
+                  <button type="button" class="btn" id="gh-save-config">Zapisz OAuth</button>
+                  <button type="button" class="btn primary" id="gh-oauth-start">Połącz →</button>
+                </div>
+              </div>
+              <div class="tab-panel" id="gh-pat">
+                <label>Personal Access Token<input id="gh-pat-token" type="password" placeholder="ghp_…" /></label>
+                <button type="button" class="btn primary" id="gh-pat-save">Zapisz i testuj</button>
+              </div>
+              <div class="inline-status" id="gh-status"></div>
+            </div>
 
-        <div class="status" id="gh-status"></div>
-        <div class="actions">
-          <button class="btn ghost" data-prev>← Wstecz</button>
-          <button class="btn primary" data-next>Dalej →</button>
-        </div>
-      </section>
+            <div class="card-block">
+              <div class="card-head">
+                <h2>UiPath Orchestrator</h2>
+                <span class="badge" id="ui-badge">—</span>
+              </div>
+              <div class="hint box">Redirect: <code id="ui-callback">…</code></div>
+              <label>Account URL<input id="ui-account" value="https://cloud.uipath.com" /></label>
+              <label>Organization<input id="ui-org" placeholder="folder w URL" /></label>
+              <label>Tenant<input id="ui-tenant" value="DefaultTenant" /></label>
+              <label>Client ID<input id="ui-client-id" autocomplete="off" /></label>
+              <label>Client Secret<input id="ui-client-secret" type="password" autocomplete="off" /></label>
+              <div class="btn-row">
+                <button type="button" class="btn" id="ui-save-config">Zapisz</button>
+                <button type="button" class="btn primary" id="ui-oauth-start">Zaloguj →</button>
+              </div>
+              <div class="inline-status" id="ui-status"></div>
+            </div>
+          </div>
+        </section>
 
-      <!-- Step 2 UiPath -->
-      <section class="step" data-step="2" id="uipath">
-        <h2>UiPath Orchestrator</h2>
-        <p class="lead">External Application w Automation Cloud → Admin → External Applications.</p>
+        <!-- Templates -->
+        <section class="page" data-page="templates">
+          <div class="split-editor">
+            <div class="split-list">
+              <div class="card-head">
+                <h2>Szablony dokumentacji</h2>
+                <button type="button" class="btn sm" id="tpl-new">+ Nowy</button>
+              </div>
+              <p class="muted">Wzorce README, procedur, specyfikacji — osobno od standardów kodu.</p>
+              <div class="table-wrap">
+                <table class="data-table">
+                  <thead><tr><th>Nazwa</th><th>Opis</th><th></th></tr></thead>
+                  <tbody id="templates-body"></tbody>
+                </table>
+              </div>
+              <div class="btn-row">
+                <label class="btn sm">Import PDF/TXT<input id="tpl-file" type="file" accept=".pdf,.txt,.md" hidden /></label>
+                <button type="button" class="btn sm" id="tpl-sample">Przykład</button>
+              </div>
+            </div>
+            <div class="split-form card-block">
+              <h3 id="tpl-form-title">Nowy szablon</h3>
+              <input type="hidden" id="tpl-id" />
+              <label>Nazwa<input id="tpl-name" placeholder="README API" /></label>
+              <label>Opis<input id="tpl-desc" placeholder="Krótki opis zastosowania" /></label>
+              <label>Treść szablonu<textarea id="tpl-content" rows="14" placeholder="Sekcje, układ, styl…"></textarea></label>
+              <div class="btn-row">
+                <button type="button" class="btn primary" id="tpl-save">Zapisz</button>
+                <button type="button" class="btn ghost" id="tpl-cancel">Anuluj</button>
+              </div>
+            </div>
+          </div>
+        </section>
 
-        <div class="hint box">
-          Redirect URI: <code id="ui-callback">…</code><br />
-          Scopes: <code>OR.Administration OR.Jobs OR.Queues OR.Folders OR.Execution</code>
-        </div>
+        <!-- Memory -->
+        <section class="page" data-page="memory">
+          <div class="card-block">
+            <div class="card-head">
+              <h2>Fakty i notatki</h2>
+              <button type="button" class="btn sm danger" id="memory-clear">Wyczyść wszystko</button>
+            </div>
+            <p class="muted">Kontekst użytkownika dla SLM i agenta chmurowego — nie mylić ze szablonami ani standardami PDF.</p>
+            <label>Nowa notatka<textarea id="memory-text" rows="3" placeholder="Zapamiętaj, że…"></textarea></label>
+            <div class="btn-row">
+              <button type="button" class="btn primary" id="memory-learn">Dodaj notatkę</button>
+              <label class="btn sm">Import pliku<input id="memory-file" type="file" accept=".pdf,.txt,.md,.csv,.json" hidden /></label>
+            </div>
+          </div>
+          <div class="card-block">
+            <div class="table-wrap tall">
+              <table class="data-table">
+                <thead><tr><th>Tytuł</th><th>Typ</th><th>Podgląd</th><th></th></tr></thead>
+                <tbody id="memory-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
 
-        <label>Account URL<input id="ui-account" value="https://cloud.uipath.com" /></label>
-        <label>Organization (folder name w URL)<input id="ui-org" placeholder="np. moja-firma" /></label>
-        <label>Tenant<input id="ui-tenant" value="DefaultTenant" /></label>
-        <label>Client ID<input id="ui-client-id" autocomplete="off" /></label>
-        <label>Client Secret<input id="ui-client-secret" type="password" autocomplete="off" /></label>
+        <!-- Standards -->
+        <section class="page" data-page="standards">
+          <div class="card-block">
+            <div class="card-head">
+              <h2>Standardy kodu (PDF)</h2>
+              <label class="btn primary sm">+ Dodaj PDF<input id="standards-file" type="file" accept=".pdf,application/pdf" hidden /></label>
+            </div>
+            <p class="muted">Normy code review — agent cytuje je mówiąc o kodzie w stylu HAL / GLaDOS / TARS.</p>
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead><tr><th>Plik</th><th>Nazwa</th><th>Tekst</th><th></th></tr></thead>
+                <tbody id="standards-body"></tbody>
+              </table>
+            </div>
+            <p class="hint muted">Wymaga <code>poppler</code> (<code>brew install poppler</code>).</p>
+          </div>
+        </section>
 
-        <div class="actions row">
-          <button class="btn" id="ui-save-config">Zapisz konfigurację</button>
-          <button class="btn primary" id="ui-oauth-start">Zaloguj przez UiPath →</button>
-        </div>
+        <!-- Skills -->
+        <section class="page" data-page="skills">
+          <div class="grid-2">
+            <div class="card-block">
+              <h2>Lista skilli</h2>
+              <div class="table-wrap tall">
+                <table class="data-table">
+                  <thead><tr><th>Nazwa</th><th>Opis</th><th>Webhook</th><th></th></tr></thead>
+                  <tbody id="skills-body"></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="card-block">
+              <h2>Import / n8n</h2>
+              <label>Import JSON (merge)
+                <textarea id="skills-json" rows="8" placeholder='{"skills":[{"name":"…","description":"…","webhook":"…"}]}'></textarea>
+              </label>
+              <div class="btn-row">
+                <button type="button" class="btn primary" id="skills-import">Importuj</button>
+                <button type="button" class="btn" id="skills-reload">Odśwież</button>
+              </div>
+              <hr class="divider" />
+              <label>n8n Base URL<input id="n8n-base" placeholder="https://n8n.example.com" /></label>
+              <label>n8n Auth header<input id="n8n-auth" placeholder="Authorization: Bearer …" /></label>
+              <button type="button" class="btn" id="n8n-save">Zapisz n8n</button>
+            </div>
+          </div>
+        </section>
 
-        <div class="status" id="ui-status"></div>
-        <div class="actions">
-          <button class="btn ghost" data-prev>← Wstecz</button>
-          <button class="btn primary" data-next>Dalej →</button>
-        </div>
-      </section>
-
-      <!-- Step 3 Templates + Memory -->
-      <section class="step" data-step="3" id="knowledge">
-        <h2>Szablony &amp; wiedza</h2>
-        <p class="lead">
-          <strong>Szablony dokumentacji</strong> — nazwa + treść wzoru (README, procedury).
-          <strong>Fakty</strong> — krótkie notatki kontekstowe. Osobno od <em>standardów kodu</em> (krok 4).
-        </p>
-
-        <h3 class="sub">Szablony dokumentacji</h3>
-        <div class="status show" id="templates-count">Ładowanie…</div>
-        <div class="table-wrap">
-          <table class="data-table" id="templates-table">
-            <thead>
-              <tr><th>Nazwa</th><th>Opis</th><th>Znaków</th><th></th></tr>
-            </thead>
-            <tbody id="templates-body"></tbody>
-          </table>
-        </div>
-        <label>Nazwa szablonu<input id="tpl-name" placeholder="np. README API" /></label>
-        <label>Opis (krótko)<input id="tpl-desc" placeholder="np. Dokumentacja endpointów REST" /></label>
-        <label>Treść szablonu
-          <textarea id="tpl-content" rows="5" placeholder="Sekcje, układ, styl…"></textarea>
-        </label>
-        <div class="actions row">
-          <button class="btn primary" id="tpl-save">Zapisz szablon</button>
-          <label class="btn">
-            Import PDF/TXT → szablon
-            <input id="tpl-file" type="file" accept=".pdf,.txt,.md" hidden />
-          </label>
-          <button class="btn" id="tpl-sample">Przykładowy wzór</button>
-        </div>
-        <div class="status" id="templates-status"></div>
-
-        <h3 class="sub">Fakty i notatki</h3>
-        <div class="status show" id="memory-count">Ładowanie…</div>
-        <label>Notatka / fakt
-          <textarea id="memory-text" rows="3" placeholder="np. Preferuję odpowiedzi po polsku…"></textarea>
-        </label>
-        <div class="actions row">
-          <button class="btn" id="memory-learn">Zapamiętaj notatkę</button>
-          <label class="btn">
-            Plik → pamięć
-            <input id="memory-file" type="file" accept=".pdf,.txt,.md,.csv,.json" hidden />
-          </label>
-        </div>
-        <div class="status" id="memory-status"></div>
-        <div class="actions">
-          <button class="btn ghost" data-prev>← Wstecz</button>
-          <button class="btn primary" data-next>Dalej →</button>
-        </div>
-      </section>
-
-      <!-- Step 4 Code standards -->
-      <section class="step" data-step="4" id="standards">
-        <h2>Standardy kodu (PDF)</h2>
-        <p class="lead">
-          Normy obowiązkowe dla code review i refaktoru — agent stosuje je mówiąc o kodzie
-          w stylu aktywnej skórki (HAL / GLaDOS / TARS).
-        </p>
-        <div class="status show" id="standards-count">Ładowanie…</div>
-        <ul class="skill-list" id="standards-list"></ul>
-        <div class="actions row">
-          <label class="btn primary">
-            Dodaj PDF standardu
-            <input id="standards-file" type="file" accept=".pdf,application/pdf" hidden />
-          </label>
-          <button class="btn" id="standards-reload">Odśwież listę</button>
-        </div>
-        <div class="hint box">
-          Wymaga <code>poppler</code> (<code>brew install poppler</code>). Pliki trafiają do
-          <code>standards/</code> w repo — możesz też skopiować ręcznie i zrestartować backend.
-        </div>
-        <div class="status" id="standards-status"></div>
-        <div class="actions">
-          <button class="btn ghost" data-prev>← Wstecz</button>
-          <button class="btn primary" data-next>Dalej →</button>
-        </div>
-      </section>
-
-      <!-- Step 5 Skills -->
-      <section class="step" data-step="5" id="skills">
-        <h2>Skille &amp; n8n</h2>
-        <p class="lead">Import skilli (webhooki n8n lub lokalne endpointy). Agent chmurowy użyje ich przy zadaniach code/net.</p>
-
-        <label>n8n Base URL (opcjonalnie)<input id="n8n-base" placeholder="https://n8n.example.com" /></label>
-        <label>n8n Auth header (opcjonalnie)<input id="n8n-auth" placeholder="Authorization: Bearer …" /></label>
-        <button class="btn" id="n8n-save">Zapisz n8n</button>
-
-        <label>Serper API key (lepsze Google — opcjonalnie)<input id="serper-key" type="password" placeholder="…" /></label>
-        <label class="row-check"><input type="checkbox" id="web-enabled" checked /> Wyszukiwanie internetowe włączone</label>
-        <button class="btn" id="web-save">Zapisz wyszukiwanie</button>
-
-        <div class="hint box">
-          Import JSON: tablica skilli lub <code>{ "skills": [ … ] }</code> jak w <code>skills/skills.json</code>.
-        </div>
-        <label>Import skilli (JSON)
-          <textarea id="skills-json" rows="6" placeholder='[{"name":"lights","description":"…","webhook":"webhook/lights"}]'></textarea>
-        </label>
-        <div class="actions row">
-          <button class="btn primary" id="skills-import">Importuj (merge)</button>
-          <button class="btn" id="skills-reload">Odśwież listę</button>
-        </div>
-        <ul class="skill-list" id="skills-list"></ul>
-        <div class="status" id="skills-status"></div>
-        <div class="actions">
-          <button class="btn ghost" data-prev>← Wstecz</button>
-          <button class="btn primary" data-next>Dalej →</button>
-        </div>
-      </section>
-
-      <!-- Step 6 Summary -->
-      <section class="step" data-step="6" id="summary">
-        <h2>Podsumowanie</h2>
-        <div class="cards" id="summary-cards"></div>
-        <div class="actions row">
-          <button class="btn" id="test-all">Przetestuj połączenia</button>
-          <button class="btn primary" id="finish">Zakończ i aktywuj skille</button>
-        </div>
-        <div class="status" id="finish-status"></div>
-        <p class="muted">Po zakończeniu OKO używa lokalnych endpointów + opcjonalnie n8n dla własnych webhooków.</p>
-      </section>
-    </main>
+        <!-- Settings -->
+        <section class="page" data-page="settings">
+          <div class="grid-2">
+            <div class="card-block">
+              <h2>Wyszukiwanie internetowe</h2>
+              <label class="row-check"><input type="checkbox" id="web-enabled" checked /> Włączone (DuckDuckGo)</label>
+              <label>Serper API key (Google — opcjonalnie)<input id="serper-key" type="password" /></label>
+              <button type="button" class="btn primary" id="web-save">Zapisz</button>
+            </div>
+            <div class="card-block">
+              <h2>Aktywacja</h2>
+              <p class="muted">Po zmianach integracji i skilli kliknij, aby przeładować webhooki lokalne.</p>
+              <button type="button" class="btn primary" id="finish">Zakończ i aktywuj skille</button>
+              <div class="inline-status" id="finish-status"></div>
+            </div>
+          </div>
+          <div class="card-block">
+            <h2>Linki</h2>
+            <div class="chip-row">
+              <a class="chip" href="/health" target="_blank">Health JSON</a>
+              <a class="chip" href="/" target="_blank">Root</a>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
   </div>
+
+  <div class="toast-stack" id="toasts"></div>
+
+  <dialog class="modal" id="view-modal">
+    <div class="modal-head">
+      <h3 id="modal-title">Podgląd</h3>
+      <button type="button" class="btn icon-only" id="modal-close">✕</button>
+    </div>
+    <pre class="modal-body" id="modal-body"></pre>
+  </dialog>
+
   <script src="/setup/app.js"></script>
 </body>
 </html>

@@ -1,37 +1,52 @@
-const STEP_LABELS = ["Start", "GitHub", "UiPath", "Szablony", "Standardy", "Skille", "Gotowe"];
-let currentStep = 0;
+/** OKO Admin Panel — single-page dashboard */
+
+const PAGES = {
+  dashboard: { title: "Pulpit", sub: "Stan systemu OKO na Macu" },
+  integrations: { title: "Integracje", sub: "GitHub, UiPath Orchestrator" },
+  templates: { title: "Szablony dokumentacji", sub: "Nazwa + wzór treści docs" },
+  memory: { title: "Pamięć", sub: "Fakty i notatki kontekstowe" },
+  standards: { title: "Standardy kodu", sub: "Normy PDF dla code review" },
+  skills: { title: "Skille", sub: "Webhooki lokalne i n8n" },
+  settings: { title: "Ustawienia", sub: "Internet, aktywacja, linki" },
+};
+
 let statusData = {};
-let editingTemplateId = "";
+let templatesCache = [];
+let memoryCache = [];
 
-const stepsEl = document.getElementById("steps");
-const sections = [...document.querySelectorAll(".step")];
+// ── Utils ─────────────────────────────────────────────────────────────
 
-function renderSteps() {
-  stepsEl.innerHTML = STEP_LABELS.map((label, i) => {
-    let cls = "";
-    if (i === currentStep) cls = "active";
-    else if (i < currentStep) cls = "done";
-    return `<span class="${cls}">${i + 1}. ${label}</span>`;
-  }).join("");
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
-function go(step) {
-  currentStep = Math.max(0, Math.min(STEP_LABELS.length - 1, step));
-  sections.forEach((s) => s.classList.toggle("active", Number(s.dataset.step) === currentStep));
-  renderSteps();
-  if (currentStep === 3) {
-    refreshTemplatesPanel();
-    refreshMemoryPanel();
+function arrayBufferToBase64(buf) {
+  const bytes = new Uint8Array(buf);
+  const chunk = 0x8000;
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
   }
-  if (currentStep === 4) refreshStandardsPanel();
-  if (currentStep === 5) refreshSkillsPanel();
-  if (currentStep === 6) renderSummary();
+  return btoa(binary);
 }
 
-function showStatus(el, text, kind = "info") {
+function toast(msg, kind = "info") {
+  const stack = document.getElementById("toasts");
+  const el = document.createElement("div");
+  el.className = `toast ${kind}`;
+  el.textContent = msg;
+  stack.appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
+function inline(el, text, kind = "") {
   if (!el) return;
-  el.textContent = text;
-  el.className = `status show ${kind}`;
+  el.textContent = text || "";
+  el.className = `inline-status ${kind}`;
 }
 
 async function api(path, opts = {}) {
@@ -44,432 +59,337 @@ async function api(path, opts = {}) {
   return data;
 }
 
-/** Base64 encode without stack overflow on large PDFs (chunked). */
-function arrayBufferToBase64(buf) {
-  const bytes = new Uint8Array(buf);
-  const chunk = 0x8000;
-  let binary = "";
-  for (let i = 0; i < bytes.length; i += chunk) {
-    const slice = bytes.subarray(i, i + chunk);
-    binary += String.fromCharCode(...slice);
-  }
-  return btoa(binary);
-}
-
 function baseUrl() {
   return `${window.location.protocol}//${window.location.host}`;
 }
 
+// ── Navigation ──────────────────────────────────────────────────────
+
+function showPage(id) {
+  document.querySelectorAll(".page").forEach((p) => p.classList.toggle("active", p.dataset.page === id));
+  document.querySelectorAll(".nav-item").forEach((n) => n.classList.toggle("active", n.dataset.page === id));
+  const meta = PAGES[id] || PAGES.dashboard;
+  document.getElementById("page-title").textContent = meta.title;
+  document.getElementById("page-sub").textContent = meta.sub;
+  location.hash = id;
+  document.getElementById("sidebar").classList.remove("open");
+  loadPage(id);
+}
+
+function loadPage(id) {
+  if (id === "dashboard") renderDashboard();
+  if (id === "templates") refreshTemplates();
+  if (id === "memory") refreshMemory();
+  if (id === "standards") refreshStandards();
+  if (id === "skills") refreshSkills();
+  if (id === "settings") loadSettingsForm();
+}
+
+document.querySelectorAll(".nav-item").forEach((btn) => {
+  btn.addEventListener("click", () => showPage(btn.dataset.page));
+});
+document.querySelectorAll("[data-goto]").forEach((btn) => {
+  btn.addEventListener("click", () => showPage(btn.dataset.goto));
+});
+document.getElementById("menu-toggle").addEventListener("click", () => {
+  document.getElementById("sidebar").classList.toggle("open");
+});
+
+// ── Status & dashboard ───────────────────────────────────────────────
+
 async function refreshStatus() {
   statusData = await api("/api/setup/status");
-  const gh = statusData.github;
-  const ui = statusData.uipath;
-  if (gh?.connected) {
-    showStatus(document.getElementById("gh-status"), `GitHub: @${gh.login || "połączono"}`, "ok");
-  }
-  if (ui?.connected) {
-    showStatus(document.getElementById("ui-status"), `UiPath: ${ui.organization}/${ui.tenant}`, "ok");
-  }
+  updateBadges();
+  renderDashboard();
+  document.getElementById("sys-status").textContent =
+    `Backend :${statusData.port || 8787} · ${statusData.brainMode || "?"}`;
 }
 
-async function refreshTemplatesPanel() {
-  const countEl = document.getElementById("templates-count");
-  const body = document.getElementById("templates-body");
-  try {
-    const r = await api("/api/setup/templates");
-    showStatus(countEl, `Szablony dokumentacji: ${r.count}`, r.count > 0 ? "ok" : "info");
-    body.innerHTML = (r.templates || [])
-      .map(
-        (t) =>
-          `<tr data-id="${t.id}">` +
-          `<td><strong>${escapeHtml(t.name)}</strong></td>` +
-          `<td>${escapeHtml(t.description || "—")}</td>` +
-          `<td>${t.content.length}</td>` +
-          `<td><button type="button" class="btn ghost tpl-edit">Edytuj</button> ` +
-          `<button type="button" class="btn ghost tpl-del">Usuń</button></td></tr>`,
-      )
-      .join("") ||
-      `<tr><td colspan="4" class="muted">Brak szablonów — dodaj nazwę i treść poniżej.</td></tr>`;
-
-    body.querySelectorAll(".tpl-edit").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const row = btn.closest("tr");
-        const id = row?.dataset.id;
-        const t = (r.templates || []).find((x) => x.id === id);
-        if (!t) return;
-        editingTemplateId = t.id;
-        document.getElementById("tpl-name").value = t.name;
-        document.getElementById("tpl-desc").value = t.description || "";
-        document.getElementById("tpl-content").value = t.content;
-        showStatus(document.getElementById("templates-status"), `Edycja: ${t.name}`, "info");
-      });
-    });
-    body.querySelectorAll(".tpl-del").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        const id = btn.closest("tr")?.dataset.id;
-        if (!id || !confirm("Usunąć ten szablon?")) return;
-        try {
-          await api(`/api/setup/templates/${encodeURIComponent(id)}`, { method: "DELETE" });
-          if (editingTemplateId === id) clearTemplateForm();
-          await refreshTemplatesPanel();
-          await refreshStatus();
-        } catch (e) {
-          showStatus(document.getElementById("templates-status"), e.message, "err");
-        }
-      });
-    });
-  } catch (e) {
-    showStatus(countEl, e.message, "err");
+function updateBadges() {
+  const gh = statusData.github || {};
+  const ui = statusData.uipath || {};
+  const ghB = document.getElementById("gh-badge");
+  const uiB = document.getElementById("ui-badge");
+  if (ghB) {
+    ghB.textContent = gh.connected ? `@${gh.login || "OK"}` : "offline";
+    ghB.className = `badge ${gh.connected ? "on" : "off"}`;
   }
+  if (uiB) {
+    uiB.textContent = ui.connected ? "OK" : "offline";
+    uiB.className = `badge ${ui.connected ? "on" : "off"}`;
+  }
+  if (gh.connected) inline(document.getElementById("gh-status"), `Połączono: @${gh.login}`, "ok");
+  if (ui.connected) inline(document.getElementById("ui-status"), `${ui.organization}/${ui.tenant}`, "ok");
 }
+
+function renderDashboard() {
+  const gh = statusData.github || {};
+  const ui = statusData.uipath || {};
+  document.getElementById("dash-stats").innerHTML = `
+    <div class="stat-card ${gh.connected ? "ok" : "warn"}">
+      <div class="label">GitHub</div>
+      <div class="value">${gh.connected ? "✓" : "—"}</div>
+      <div class="sub">${gh.login ? `@${gh.login}` : "nie połączono"}</div>
+    </div>
+    <div class="stat-card ${ui.connected ? "ok" : "warn"}">
+      <div class="label">UiPath</div>
+      <div class="value">${ui.connected ? "✓" : "—"}</div>
+      <div class="sub">${ui.organization || "brak"}</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Szablony</div>
+      <div class="value">${statusData.templatesCount ?? 0}</div>
+      <div class="sub">dokumentacja</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Standardy</div>
+      <div class="value">${statusData.standardsCount ?? 0}</div>
+      <div class="sub">PDF kodu</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Pamięć</div>
+      <div class="value">${statusData.memoryGlobalCount ?? 0}</div>
+      <div class="sub">faktów</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Skille</div>
+      <div class="value">${(statusData.skills || []).length}</div>
+      <div class="sub">aktywnych</div>
+    </div>
+  `;
+  document.getElementById("sys-meta").innerHTML = `
+    <dt>Tryb mózgu</dt><dd>${escapeHtml(statusData.brainMode || "—")}</dd>
+    <dt>Repozytorium</dt><dd>${escapeHtml(statusData.repoPath || "—")}</dd>
+    <dt>Internet</dt><dd>${statusData.webSearchEnabled ? "włączony" : "wyłączony"} · Serper ${statusData.serperApiKeySet ? "tak" : "nie"}</dd>
+    <dt>URL panelu</dt><dd>${escapeHtml(statusData.setupUrl || baseUrl() + "/setup")}</dd>
+  `;
+  document.getElementById("dash-skills").innerHTML = (statusData.skills || [])
+    .map((s) => `<span class="tag">${escapeHtml(s)}</span>`)
+    .join("") || '<span class="muted">Brak skilli</span>';
+}
+
+// ── Templates ───────────────────────────────────────────────────────
 
 function clearTemplateForm() {
-  editingTemplateId = "";
+  document.getElementById("tpl-id").value = "";
   document.getElementById("tpl-name").value = "";
   document.getElementById("tpl-desc").value = "";
   document.getElementById("tpl-content").value = "";
+  document.getElementById("tpl-form-title").textContent = "Nowy szablon";
 }
 
-function escapeHtml(s) {
-  return String(s)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
+async function refreshTemplates() {
+  const r = await api("/api/setup/templates");
+  templatesCache = r.templates || [];
+  const body = document.getElementById("templates-body");
+  body.innerHTML = templatesCache.length
+    ? templatesCache
+        .map(
+          (t) => `<tr data-id="${t.id}">
+        <td><strong>${escapeHtml(t.name)}</strong></td>
+        <td>${escapeHtml(t.description || "—")}</td>
+        <td class="actions">
+          <button type="button" class="btn ghost tpl-view">Podgląd</button>
+          <button type="button" class="btn ghost tpl-edit">Edytuj</button>
+          <button type="button" class="btn ghost tpl-del">Usuń</button>
+        </td></tr>`,
+        )
+        .join("")
+    : `<tr><td colspan="3" class="muted">Brak szablonów — kliknij „Nowy”.</td></tr>`;
 
-async function refreshMemoryPanel() {
-  const el = document.getElementById("memory-count");
-  try {
-    const r = await api("/api/setup/memory?deviceId=global");
-    showStatus(el, `Globalna pamięć (fakty): ${r.count} wpisów`, "info");
-  } catch (e) {
-    showStatus(el, e.message, "err");
-  }
-}
-
-async function refreshStandardsPanel() {
-  const countEl = document.getElementById("standards-count");
-  const list = document.getElementById("standards-list");
-  try {
-    const r = await api("/api/setup/standards");
-    showStatus(countEl, `Załadowane standardy PDF: ${r.count}`, r.count > 0 ? "ok" : "info");
-    list.innerHTML = (r.standards || [])
-      .map(
-        (s) =>
-          `<li><strong>${s.name}</strong> — ${s.chars} znaków tekstu<br /><code>${s.filename}</code> ` +
-          `<button class="btn ghost standards-del" data-file="${encodeURIComponent(s.filename)}" type="button">Usuń</button></li>`,
-      )
-      .join("") || "<li>Brak PDF — dodaj standard kodu lub code review checklist.</li>";
-    list.querySelectorAll(".standards-del").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        const file = decodeURIComponent(btn.dataset.file || "");
-        if (!file || !confirm(`Usunąć ${file}?`)) return;
-        try {
-          await api(`/api/setup/standards/${encodeURIComponent(file)}`, { method: "DELETE" });
-          await refreshStandardsPanel();
-          await refreshStatus();
-        } catch (e) {
-          showStatus(document.getElementById("standards-status"), e.message, "err");
-        }
-      });
+  body.querySelectorAll(".tpl-edit").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const t = templatesCache.find((x) => x.id === btn.closest("tr")?.dataset.id);
+      if (!t) return;
+      document.getElementById("tpl-id").value = t.id;
+      document.getElementById("tpl-name").value = t.name;
+      document.getElementById("tpl-desc").value = t.description || "";
+      document.getElementById("tpl-content").value = t.content;
+      document.getElementById("tpl-form-title").textContent = `Edycja: ${t.name}`;
     });
-  } catch (e) {
-    showStatus(countEl, e.message, "err");
-  }
+  });
+  body.querySelectorAll(".tpl-view").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const t = templatesCache.find((x) => x.id === btn.closest("tr")?.dataset.id);
+      if (t) openModal(t.name, t.content);
+    });
+  });
+  body.querySelectorAll(".tpl-del").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const id = btn.closest("tr")?.dataset.id;
+      if (!id || !confirm("Usunąć szablon?")) return;
+      try {
+        await api(`/api/setup/templates/${encodeURIComponent(id)}`, { method: "DELETE" });
+        toast("Szablon usunięty", "ok");
+        clearTemplateForm();
+        await refreshTemplates();
+        await refreshStatus();
+      } catch (e) {
+        toast(e.message, "err");
+      }
+    });
+  });
 }
 
-async function refreshSkillsPanel() {
-  try {
-    const r = await api("/api/setup/skills");
-    document.getElementById("n8n-base").value = r.n8nBaseUrl || "";
-    document.getElementById("n8n-auth").value = r.n8nAuthHeader || "";
-    const list = document.getElementById("skills-list");
-    list.innerHTML = (r.skills || [])
-      .map(
-        (s) =>
-          `<li><strong>${s.name}</strong> — ${s.description}<br /><code>${s.webhook}</code></li>`,
-      )
-      .join("") || "<li>Brak skilli</li>";
-  } catch (e) {
-    showStatus(document.getElementById("skills-status"), e.message, "err");
-  }
+// ── Memory ──────────────────────────────────────────────────────────
+
+async function refreshMemory() {
+  const r = await api("/api/setup/memory?deviceId=global");
+  memoryCache = r.entries || [];
+  const body = document.getElementById("memory-body");
+  body.innerHTML = memoryCache.length
+    ? memoryCache
+        .map(
+          (e) => `<tr data-id="${e.id}">
+        <td><strong>${escapeHtml(e.title)}</strong></td>
+        <td>${escapeHtml(e.kind)}</td>
+        <td class="preview">${escapeHtml(e.preview)}</td>
+        <td class="actions">
+          <button type="button" class="btn ghost mem-view">Podgląd</button>
+          <button type="button" class="btn ghost mem-del">Usuń</button>
+        </td></tr>`,
+        )
+        .join("")
+    : `<tr><td colspan="4" class="muted">Pusta pamięć.</td></tr>`;
+
+  body.querySelectorAll(".mem-view").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const e = memoryCache.find((x) => x.id === btn.closest("tr")?.dataset.id);
+      if (!e) return;
+      openModal(e.title, e.preview + "\n\n(pełna treść w pliku pamięci)");
+    });
+  });
+  body.querySelectorAll(".mem-del").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const id = btn.closest("tr")?.dataset.id;
+      if (!id || !confirm("Usunąć wpis?")) return;
+      try {
+        await api(`/api/setup/memory/${encodeURIComponent(id)}?deviceId=global`, { method: "DELETE" });
+        toast("Wpis usunięty", "ok");
+        await refreshMemory();
+        await refreshStatus();
+      } catch (e) {
+        toast(e.message, "err");
+      }
+    });
+  });
 }
 
-function renderSummary() {
-  const gh = statusData.github || {};
-  const ui = statusData.uipath || {};
-  document.getElementById("summary-cards").innerHTML = `
-    <div class="card">
-      <div><h3>GitHub</h3><small>${gh.login ? `@${gh.login}` : "nie połączono"}</small></div>
-      <span class="badge ${gh.connected ? "on" : "off"}">${gh.connected ? "OK" : "brak"}</span>
-    </div>
-    <div class="card">
-      <div><h3>UiPath Orchestrator</h3><small>${ui.organization ? `${ui.organization}/${ui.tenant}` : "nie połączono"}</small></div>
-      <span class="badge ${ui.connected ? "on" : "off"}">${ui.connected ? "OK" : "brak"}</span>
-    </div>
-    <div class="card">
-      <div><h3>Szablony docs</h3><small>${statusData.templatesCount ?? 0} szablonów</small></div>
-      <span class="badge ${(statusData.templatesCount ?? 0) > 0 ? "on" : "off"}">${(statusData.templatesCount ?? 0) > 0 ? "OK" : "brak"}</span>
-    </div>
-    <div class="card">
-      <div><h3>Pamięć (fakty)</h3><small>${statusData.memoryGlobalCount ?? 0} wpisów</small></div>
-      <span class="badge ${(statusData.memoryGlobalCount ?? 0) > 0 ? "on" : "off"}">${(statusData.memoryGlobalCount ?? 0) > 0 ? "OK" : "pusta"}</span>
-    </div>
-    <div class="card">
-      <div><h3>Standardy kodu</h3><small>${statusData.standardsCount ?? 0} PDF</small></div>
-      <span class="badge ${(statusData.standardsCount ?? 0) > 0 ? "on" : "off"}">${(statusData.standardsCount ?? 0) > 0 ? "OK" : "brak"}</span>
-    </div>
-    <div class="card">
-      <div><h3>Skille</h3><small>${(statusData.skills || []).join(", ") || "brak"}</small></div>
-      <span class="badge ${(statusData.skills || []).length ? "on" : "off"}">${(statusData.skills || []).length || 0}</span>
-    </div>
-    <div class="card">
-      <div><h3>Internet</h3><small>${statusData.webSearchEnabled ? "włączone" : "wyłączone"} · Serper ${statusData.serperApiKeySet ? "tak" : "nie"}</small></div>
-      <span class="badge ${statusData.webSearchEnabled ? "on" : "off"}">${statusData.webSearchEnabled ? "OK" : "off"}</span>
-    </div>
-  `;
+// ── Standards ───────────────────────────────────────────────────────
+
+async function refreshStandards() {
+  const r = await api("/api/setup/standards");
+  const body = document.getElementById("standards-body");
+  body.innerHTML = (r.standards || []).length
+    ? r.standards
+        .map(
+          (s) => `<tr>
+        <td><code>${escapeHtml(s.filename)}</code></td>
+        <td>${escapeHtml(s.name)}</td>
+        <td>${s.chars} zn.</td>
+        <td><button type="button" class="btn ghost std-del" data-file="${encodeURIComponent(s.filename)}">Usuń</button></td>
+      </tr>`,
+        )
+        .join("")
+    : `<tr><td colspan="4" class="muted">Brak PDF — wgraj standard code review.</td></tr>`;
+
+  body.querySelectorAll(".std-del").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const file = decodeURIComponent(btn.dataset.file || "");
+      if (!file || !confirm(`Usunąć ${file}?`)) return;
+      try {
+        await api(`/api/setup/standards/${encodeURIComponent(file)}`, { method: "DELETE" });
+        toast("Standard usunięty", "ok");
+        await refreshStandards();
+        await refreshStatus();
+      } catch (e) {
+        toast(e.message, "err");
+      }
+    });
+  });
 }
+
+// ── Skills ──────────────────────────────────────────────────────────
+
+async function refreshSkills() {
+  const r = await api("/api/setup/skills");
+  document.getElementById("n8n-base").value = r.n8nBaseUrl || "";
+  document.getElementById("n8n-auth").value = r.n8nAuthHeader || "";
+  const body = document.getElementById("skills-body");
+  body.innerHTML = (r.skills || []).length
+    ? r.skills
+        .map(
+          (s) => `<tr>
+        <td><strong>${escapeHtml(s.name)}</strong></td>
+        <td class="preview">${escapeHtml(s.description)}</td>
+        <td><code>${escapeHtml(s.webhook)}</code></td>
+        <td><button type="button" class="btn ghost skill-del" data-name="${encodeURIComponent(s.name)}">Usuń</button></td>
+      </tr>`,
+        )
+        .join("")
+    : `<tr><td colspan="4" class="muted">Brak skilli.</td></tr>`;
+
+  body.querySelectorAll(".skill-del").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const name = decodeURIComponent(btn.dataset.name || "");
+      if (!name || !confirm(`Usunąć skill ${name}?`)) return;
+      try {
+        await api(`/api/setup/skills/${encodeURIComponent(name)}`, { method: "DELETE" });
+        toast(`Skill ${name} usunięty`, "ok");
+        await refreshSkills();
+        await refreshStatus();
+      } catch (e) {
+        toast(e.message, "err");
+      }
+    });
+  });
+}
+
+function loadSettingsForm() {
+  document.getElementById("web-enabled").checked = statusData.webSearchEnabled !== false;
+}
+
+// ── Modal ───────────────────────────────────────────────────────────
+
+const modal = document.getElementById("view-modal");
+function openModal(title, body) {
+  document.getElementById("modal-title").textContent = title;
+  document.getElementById("modal-body").textContent = body;
+  modal.showModal();
+}
+document.getElementById("modal-close").addEventListener("click", () => modal.close());
+modal.addEventListener("click", (e) => {
+  if (e.target === modal) modal.close();
+});
+
+// ── Tabs ────────────────────────────────────────────────────────────
 
 document.querySelectorAll(".tab").forEach((tab) => {
   tab.addEventListener("click", () => {
-    document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
-    document.querySelectorAll(".tab-panel").forEach((p) => p.classList.remove("active"));
+    const panel = tab.closest(".card-block") || document;
+    panel.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
+    panel.querySelectorAll(".tab-panel").forEach((p) => p.classList.remove("active"));
     tab.classList.add("active");
-    document.getElementById(tab.dataset.tab).classList.add("active");
+    document.getElementById(tab.dataset.tab)?.classList.add("active");
   });
 });
 
-document.querySelectorAll("[data-next]").forEach((b) => b.addEventListener("click", () => go(currentStep + 1)));
-document.querySelectorAll("[data-prev]").forEach((b) => b.addEventListener("click", () => go(currentStep - 1)));
+// ── Event handlers ──────────────────────────────────────────────────
 
 document.getElementById("gh-callback").textContent = `${baseUrl()}/api/setup/github/callback`;
 document.getElementById("ui-callback").textContent = `${baseUrl()}/api/setup/uipath/callback`;
 
-document.getElementById("gh-save-config").addEventListener("click", async () => {
-  const el = document.getElementById("gh-status");
+document.getElementById("btn-refresh").addEventListener("click", async () => {
   try {
-    await api("/api/setup/github/config", {
-      method: "POST",
-      body: JSON.stringify({
-        clientId: document.getElementById("gh-client-id").value,
-        clientSecret: document.getElementById("gh-client-secret").value,
-      }),
-    });
-    showStatus(el, "Zapisano — kliknij „Połącz przez GitHub”.", "ok");
-  } catch (e) {
-    showStatus(el, e.message, "err");
-  }
-});
-
-document.getElementById("gh-oauth-start").addEventListener("click", () => {
-  window.location.href = "/api/setup/github/start";
-});
-
-document.getElementById("gh-pat-save").addEventListener("click", async () => {
-  const el = document.getElementById("gh-status");
-  try {
-    const r = await api("/api/setup/github/pat", {
-      method: "POST",
-      body: JSON.stringify({ token: document.getElementById("gh-pat-token").value }),
-    });
-    showStatus(el, r.message, "ok");
     await refreshStatus();
+    loadPage(document.querySelector(".page.active")?.dataset.page || "dashboard");
+    toast("Odświeżono", "ok");
   } catch (e) {
-    showStatus(el, e.message, "err");
+    toast(e.message, "err");
   }
 });
 
-document.getElementById("ui-save-config").addEventListener("click", async () => {
-  const el = document.getElementById("ui-status");
-  try {
-    await api("/api/setup/uipath/config", {
-      method: "POST",
-      body: JSON.stringify({
-        accountUrl: document.getElementById("ui-account").value,
-        organization: document.getElementById("ui-org").value,
-        tenant: document.getElementById("ui-tenant").value,
-        clientId: document.getElementById("ui-client-id").value,
-        clientSecret: document.getElementById("ui-client-secret").value,
-      }),
-    });
-    showStatus(el, "Zapisano — kliknij „Zaloguj przez UiPath”.", "ok");
-  } catch (e) {
-    showStatus(el, e.message, "err");
-  }
-});
-
-document.getElementById("ui-oauth-start").addEventListener("click", () => {
-  window.location.href = "/api/setup/uipath/start";
-});
-
-document.getElementById("tpl-save").addEventListener("click", async () => {
-  const el = document.getElementById("templates-status");
-  const name = document.getElementById("tpl-name").value.trim();
-  const content = document.getElementById("tpl-content").value.trim();
-  const description = document.getElementById("tpl-desc").value.trim();
-  if (!name || !content) return showStatus(el, "Podaj nazwę i treść szablonu.", "err");
-  try {
-    const body = { name, content, description };
-    if (editingTemplateId) body.id = editingTemplateId;
-    const r = await api("/api/setup/templates", { method: "POST", body: JSON.stringify(body) });
-    showStatus(el, `Zapisano: ${r.template.name}`, "ok");
-    clearTemplateForm();
-    await refreshTemplatesPanel();
-    await refreshStatus();
-  } catch (e) {
-    showStatus(el, e.message, "err");
-  }
-});
-
-document.getElementById("tpl-file").addEventListener("change", async (ev) => {
-  const el = document.getElementById("templates-status");
-  const file = ev.target.files?.[0];
-  if (!file) return;
-  const name = document.getElementById("tpl-name").value.trim() || file.name.replace(/\.[^.]+$/, "");
-  try {
-    const buf = await file.arrayBuffer();
-    const r = await api("/api/setup/templates/upload", {
-      method: "POST",
-      body: JSON.stringify({ filename: file.name, name, base64: arrayBufferToBase64(buf) }),
-    });
-    showStatus(el, `Import: ${r.template.name}`, "ok");
-    ev.target.value = "";
-    clearTemplateForm();
-    await refreshTemplatesPanel();
-    await refreshStatus();
-  } catch (e) {
-    showStatus(el, e.message, "err");
-  }
-});
-
-document.getElementById("tpl-sample").addEventListener("click", async () => {
-  const el = document.getElementById("templates-status");
-  try {
-    const r = await api("/api/setup/templates/sample", { method: "POST", body: "{}" });
-    showStatus(el, `Dodano: ${r.template.name}`, "ok");
-    await refreshTemplatesPanel();
-    await refreshStatus();
-  } catch (e) {
-    showStatus(el, e.message, "err");
-  }
-});
-
-document.getElementById("memory-learn").addEventListener("click", async () => {
-  const el = document.getElementById("memory-status");
-  const text = document.getElementById("memory-text").value.trim();
-  if (!text) return showStatus(el, "Wpisz notatkę.", "err");
-  try {
-    const r = await api("/api/setup/memory/learn", {
-      method: "POST",
-      body: JSON.stringify({ text, deviceId: "global", force: true }),
-    });
-    showStatus(el, `Zapisano: ${r.entry.title}`, "ok");
-    document.getElementById("memory-text").value = "";
-    await refreshMemoryPanel();
-    await refreshStatus();
-  } catch (e) {
-    showStatus(el, e.message, "err");
-  }
-});
-
-document.getElementById("memory-file").addEventListener("change", async (ev) => {
-  const el = document.getElementById("memory-status");
-  const file = ev.target.files?.[0];
-  if (!file) return;
-  try {
-    const buf = await file.arrayBuffer();
-    const b64 = arrayBufferToBase64(buf);
-    const r = await api("/api/setup/memory/upload", {
-      method: "POST",
-      body: JSON.stringify({ filename: file.name, base64: b64, deviceId: "global", force: true }),
-    });
-    showStatus(el, `Dodano plik: ${r.entry.title}`, "ok");
-    ev.target.value = "";
-    await refreshMemoryPanel();
-    await refreshStatus();
-  } catch (e) {
-    showStatus(el, e.message, "err");
-  }
-});
-
-document.getElementById("standards-file").addEventListener("change", async (ev) => {
-  const el = document.getElementById("standards-status");
-  const file = ev.target.files?.[0];
-  if (!file) return;
-  try {
-    const buf = await file.arrayBuffer();
-    const b64 = arrayBufferToBase64(buf);
-    const r = await api("/api/setup/standards/upload", {
-      method: "POST",
-      body: JSON.stringify({ filename: file.name, base64: b64 }),
-    });
-    showStatus(el, `Wgrano: ${r.standard.name} (${r.standard.chars} znaków)`, "ok");
-    ev.target.value = "";
-    await refreshStandardsPanel();
-    await refreshStatus();
-  } catch (e) {
-    showStatus(el, e.message, "err");
-  }
-});
-
-document.getElementById("standards-reload").addEventListener("click", () => refreshStandardsPanel());
-
-document.getElementById("n8n-save").addEventListener("click", async () => {
-  const el = document.getElementById("skills-status");
-  try {
-    const r = await api("/api/setup/n8n/config", {
-      method: "POST",
-      body: JSON.stringify({
-        n8nBaseUrl: document.getElementById("n8n-base").value,
-        n8nAuthHeader: document.getElementById("n8n-auth").value,
-      }),
-    });
-    showStatus(el, r.message, "ok");
-  } catch (e) {
-    showStatus(el, e.message, "err");
-  }
-});
-
-document.getElementById("web-save").addEventListener("click", async () => {
-  const el = document.getElementById("skills-status");
-  try {
-    const r = await api("/api/setup/web/config", {
-      method: "POST",
-      body: JSON.stringify({
-        serperApiKey: document.getElementById("serper-key").value,
-        webSearchEnabled: document.getElementById("web-enabled").checked,
-      }),
-    });
-    showStatus(el, r.message, "ok");
-    await refreshStatus();
-  } catch (e) {
-    showStatus(el, e.message, "err");
-  }
-});
-
-document.getElementById("skills-import").addEventListener("click", async () => {
-  const el = document.getElementById("skills-status");
-  const raw = document.getElementById("skills-json").value.trim();
-  if (!raw) return showStatus(el, "Wklej JSON skilli.", "err");
-  try {
-    const parsed = JSON.parse(raw);
-    const r = await api("/api/setup/skills/import", {
-      method: "POST",
-      body: JSON.stringify({ skills: parsed.skills ?? parsed, merge: true }),
-    });
-    showStatus(el, `Zaimportowano — ${r.count} skilli.`, "ok");
-    await refreshSkillsPanel();
-    await refreshStatus();
-  } catch (e) {
-    showStatus(el, e.message, "err");
-  }
-});
-
-document.getElementById("skills-reload").addEventListener("click", () => refreshSkillsPanel());
-
-document.getElementById("test-all").addEventListener("click", async () => {
-  const el = document.getElementById("finish-status");
+document.getElementById("btn-test-all").addEventListener("click", async () => {
   const parts = [];
   try {
     const gh = await api("/api/setup/github/test", { method: "POST", body: "{}" });
@@ -483,43 +403,253 @@ document.getElementById("test-all").addEventListener("click", async () => {
   } catch (e) {
     parts.push(`UiPath: ${e.message}`);
   }
-  showStatus(el, parts.join(" · "), parts.every((p) => p.includes("OK") || p.includes("Połączono")) ? "ok" : "info");
+  toast(parts.join(" · "), parts.every((p) => p.includes("OK") || p.includes("Połączono")) ? "ok" : "err");
   await refreshStatus();
-  renderSummary();
 });
 
-document.getElementById("finish").addEventListener("click", async () => {
-  const el = document.getElementById("finish-status");
+document.getElementById("gh-save-config").addEventListener("click", async () => {
   try {
-    const r = await api("/api/setup/finish", { method: "POST", body: "{}" });
-    showStatus(el, r.message, "ok");
-    await refreshStatus();
-    renderSummary();
+    await api("/api/setup/github/config", {
+      method: "POST",
+      body: JSON.stringify({
+        clientId: document.getElementById("gh-client-id").value,
+        clientSecret: document.getElementById("gh-client-secret").value,
+      }),
+    });
+    toast("GitHub OAuth zapisany", "ok");
   } catch (e) {
-    showStatus(el, e.message, "err");
+    toast(e.message, "err");
+  }
+});
+document.getElementById("gh-oauth-start").addEventListener("click", () => {
+  location.href = "/api/setup/github/start";
+});
+document.getElementById("gh-pat-save").addEventListener("click", async () => {
+  try {
+    const r = await api("/api/setup/github/pat", {
+      method: "POST",
+      body: JSON.stringify({ token: document.getElementById("gh-pat-token").value }),
+    });
+    toast(r.message, "ok");
+    await refreshStatus();
+  } catch (e) {
+    toast(e.message, "err");
   }
 });
 
-const params = new URLSearchParams(window.location.search);
+document.getElementById("ui-save-config").addEventListener("click", async () => {
+  try {
+    await api("/api/setup/uipath/config", {
+      method: "POST",
+      body: JSON.stringify({
+        accountUrl: document.getElementById("ui-account").value,
+        organization: document.getElementById("ui-org").value,
+        tenant: document.getElementById("ui-tenant").value,
+        clientId: document.getElementById("ui-client-id").value,
+        clientSecret: document.getElementById("ui-client-secret").value,
+      }),
+    });
+    toast("UiPath zapisany", "ok");
+  } catch (e) {
+    toast(e.message, "err");
+  }
+});
+document.getElementById("ui-oauth-start").addEventListener("click", () => {
+  location.href = "/api/setup/uipath/start";
+});
+
+document.getElementById("tpl-new").addEventListener("click", clearTemplateForm);
+document.getElementById("tpl-cancel").addEventListener("click", clearTemplateForm);
+document.getElementById("tpl-save").addEventListener("click", async () => {
+  const name = document.getElementById("tpl-name").value.trim();
+  const content = document.getElementById("tpl-content").value.trim();
+  const description = document.getElementById("tpl-desc").value.trim();
+  const id = document.getElementById("tpl-id").value.trim();
+  if (!name || !content) return toast("Podaj nazwę i treść", "err");
+  try {
+    const body = { name, content, description };
+    if (id) body.id = id;
+    const r = await api("/api/setup/templates", { method: "POST", body: JSON.stringify(body) });
+    toast(`Zapisano: ${r.template.name}`, "ok");
+    clearTemplateForm();
+    await refreshTemplates();
+    await refreshStatus();
+  } catch (e) {
+    toast(e.message, "err");
+  }
+});
+document.getElementById("tpl-file").addEventListener("change", async (ev) => {
+  const file = ev.target.files?.[0];
+  if (!file) return;
+  const name = document.getElementById("tpl-name").value.trim() || file.name.replace(/\.[^.]+$/, "");
+  try {
+    const r = await api("/api/setup/templates/upload", {
+      method: "POST",
+      body: JSON.stringify({ filename: file.name, name, base64: arrayBufferToBase64(await file.arrayBuffer()) }),
+    });
+    toast(`Import: ${r.template.name}`, "ok");
+    ev.target.value = "";
+    await refreshTemplates();
+    await refreshStatus();
+  } catch (e) {
+    toast(e.message, "err");
+  }
+});
+document.getElementById("tpl-sample").addEventListener("click", async () => {
+  try {
+    const r = await api("/api/setup/templates/sample", { method: "POST", body: "{}" });
+    toast(`Dodano: ${r.template.name}`, "ok");
+    await refreshTemplates();
+    await refreshStatus();
+  } catch (e) {
+    toast(e.message, "err");
+  }
+});
+
+document.getElementById("memory-learn").addEventListener("click", async () => {
+  const text = document.getElementById("memory-text").value.trim();
+  if (!text) return toast("Wpisz notatkę", "err");
+  try {
+    const r = await api("/api/setup/memory/learn", {
+      method: "POST",
+      body: JSON.stringify({ text, deviceId: "global", force: true }),
+    });
+    toast(`Zapisano: ${r.entry.title}`, "ok");
+    document.getElementById("memory-text").value = "";
+    await refreshMemory();
+    await refreshStatus();
+  } catch (e) {
+    toast(e.message, "err");
+  }
+});
+document.getElementById("memory-file").addEventListener("change", async (ev) => {
+  const file = ev.target.files?.[0];
+  if (!file) return;
+  try {
+    const r = await api("/api/setup/memory/upload", {
+      method: "POST",
+      body: JSON.stringify({
+        filename: file.name,
+        base64: arrayBufferToBase64(await file.arrayBuffer()),
+        deviceId: "global",
+        force: true,
+      }),
+    });
+    toast(`Dodano: ${r.entry.title}`, "ok");
+    ev.target.value = "";
+    await refreshMemory();
+    await refreshStatus();
+  } catch (e) {
+    toast(e.message, "err");
+  }
+});
+document.getElementById("memory-clear").addEventListener("click", async () => {
+  if (!confirm("Wyczyścić całą pamięć globalną?")) return;
+  try {
+    const r = await api("/api/setup/memory/clear", {
+      method: "POST",
+      body: JSON.stringify({ deviceId: "global" }),
+    });
+    toast(`Usunięto ${r.cleared} wpisów`, "ok");
+    await refreshMemory();
+    await refreshStatus();
+  } catch (e) {
+    toast(e.message, "err");
+  }
+});
+
+document.getElementById("standards-file").addEventListener("change", async (ev) => {
+  const file = ev.target.files?.[0];
+  if (!file) return;
+  try {
+    const r = await api("/api/setup/standards/upload", {
+      method: "POST",
+      body: JSON.stringify({ filename: file.name, base64: arrayBufferToBase64(await file.arrayBuffer()) }),
+    });
+    toast(`Wgrano: ${r.standard.name}`, "ok");
+    ev.target.value = "";
+    await refreshStandards();
+    await refreshStatus();
+  } catch (e) {
+    toast(e.message, "err");
+  }
+});
+
+document.getElementById("skills-import").addEventListener("click", async () => {
+  const raw = document.getElementById("skills-json").value.trim();
+  if (!raw) return toast("Wklej JSON", "err");
+  try {
+    const parsed = JSON.parse(raw);
+    const r = await api("/api/setup/skills/import", {
+      method: "POST",
+      body: JSON.stringify({ skills: parsed.skills ?? parsed, merge: true }),
+    });
+    toast(`Zaimportowano ${r.count} skilli`, "ok");
+    await refreshSkills();
+    await refreshStatus();
+  } catch (e) {
+    toast(e.message, "err");
+  }
+});
+document.getElementById("skills-reload").addEventListener("click", () => refreshSkills().catch((e) => toast(e.message, "err")));
+document.getElementById("n8n-save").addEventListener("click", async () => {
+  try {
+    const r = await api("/api/setup/n8n/config", {
+      method: "POST",
+      body: JSON.stringify({
+        n8nBaseUrl: document.getElementById("n8n-base").value,
+        n8nAuthHeader: document.getElementById("n8n-auth").value,
+      }),
+    });
+    toast(r.message, "ok");
+  } catch (e) {
+    toast(e.message, "err");
+  }
+});
+
+document.getElementById("web-save").addEventListener("click", async () => {
+  try {
+    const r = await api("/api/setup/web/config", {
+      method: "POST",
+      body: JSON.stringify({
+        serperApiKey: document.getElementById("serper-key").value,
+        webSearchEnabled: document.getElementById("web-enabled").checked,
+      }),
+    });
+    toast(r.message, "ok");
+    await refreshStatus();
+  } catch (e) {
+    toast(e.message, "err");
+  }
+});
+document.getElementById("finish").addEventListener("click", async () => {
+  try {
+    const r = await api("/api/setup/finish", { method: "POST", body: "{}" });
+    toast(r.message, "ok");
+    inline(document.getElementById("finish-status"), r.message, "ok");
+    await refreshStatus();
+  } catch (e) {
+    toast(e.message, "err");
+  }
+});
+
+// ── Boot ────────────────────────────────────────────────────────────
+
+const params = new URLSearchParams(location.search);
 if (params.get("error")) {
-  showStatus(document.getElementById("gh-status"), params.get("error"), "err");
-  go(1);
-}
-if (params.get("github") === "connected") {
-  showStatus(document.getElementById("gh-status"), `Połączono jako @${params.get("login") || "?"}`, "ok");
-  go(1);
-}
-if (params.get("uipath") === "connected") {
-  showStatus(document.getElementById("ui-status"), "UiPath połączony.", "ok");
-  go(6);
+  toast(params.get("error"), "err");
+  showPage("integrations");
+} else if (params.get("github") === "connected") {
+  toast(`GitHub: @${params.get("login") || "?"}`, "ok");
+  showPage("integrations");
+} else if (params.get("uipath") === "connected") {
+  toast("UiPath połączony", "ok");
+  showPage("integrations");
+} else {
+  const LEGACY = { knowledge: "templates", summary: "dashboard", memory: "memory" };
+  const raw = location.hash.replace("#", "");
+  const hash = LEGACY[raw] || raw;
+  showPage(PAGES[hash] ? hash : "dashboard");
 }
 
-renderSteps();
-refreshStatus().catch(() => {});
-
-if (window.location.hash === "#github") go(1);
-if (window.location.hash === "#uipath") go(2);
-if (window.location.hash === "#knowledge" || window.location.hash === "#memory") go(3);
-if (window.location.hash === "#standards") go(4);
-if (window.location.hash === "#skills") go(5);
-if (window.location.hash === "#summary") go(6);
+refreshStatus().catch((e) => toast(e.message, "err"));

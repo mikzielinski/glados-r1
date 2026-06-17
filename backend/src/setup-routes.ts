@@ -101,6 +101,9 @@ export class SetupRoutes {
         memoryGlobalCount: mem.count,
         standardsCount: this.standards.count,
         templatesCount: this.docTemplates.count,
+        brainMode: this.cfg.brainMode,
+        repoPath: this.cfg.repoPath,
+        port: this.cfg.port,
       });
     }
 
@@ -166,6 +169,13 @@ export class SetupRoutes {
       const deviceId = String(body.deviceId ?? GLOBAL_MEMORY_DEVICE);
       const n = await this.memory.clear(deviceId);
       return json(res, 200, { ok: true, cleared: n, deviceId });
+    }
+    if (path.startsWith("/api/setup/memory/") && req.method === "DELETE") {
+      const entryId = decodeURIComponent(path.slice("/api/setup/memory/".length));
+      const deviceId = url.searchParams.get("deviceId") ?? GLOBAL_MEMORY_DEVICE;
+      if (!entryId) return json(res, 400, { ok: false, message: "Brak id wpisu." });
+      const ok = await this.memory.forget(deviceId, entryId);
+      return json(res, ok ? 200 : 404, { ok, deviceId });
     }
 
     if (path === "/api/setup/standards" && req.method === "GET") {
