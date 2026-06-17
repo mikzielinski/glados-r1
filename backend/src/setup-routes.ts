@@ -27,6 +27,7 @@ import {
   upsertSkill,
 } from "./skills-file.js";
 import type { StandardsRegistry } from "./standards.js";
+import type { DocTemplateStore } from "./doc-templates.js";
 
 const log = logger("setup");
 
@@ -64,6 +65,7 @@ export class SetupRoutes {
     private readonly memory: MemoryStore,
     private readonly skills: SkillRegistry,
     private readonly standards: StandardsRegistry,
+    private readonly docTemplates: DocTemplateStore,
   ) {
     this.publicDir = resolve(process.cwd(), "public/setup");
     this.baseUrl = cfg.setupBaseUrl.replace(/\/$/, "");
@@ -98,6 +100,7 @@ export class SetupRoutes {
         skills: this.skills.getNames(),
         memoryGlobalCount: mem.count,
         standardsCount: this.standards.count,
+        templatesCount: this.docTemplates.count,
       });
     }
 
@@ -186,7 +189,27 @@ export class SetupRoutes {
       return json(res, ok ? 200 : 404, { ok, count: this.standards.count });
     }
     if (path === "/api/setup/memory/sample-doc" && req.method === "POST") {
-      return this.memorySampleDoc(res);
+      return this.templateSample(res);
+    }
+
+    if (path === "/api/setup/templates" && req.method === "GET") {
+      const list = await this.docTemplates.list();
+      return json(res, 200, { ok: true, count: list.length, templates: list });
+    }
+    if (path === "/api/setup/templates" && req.method === "POST") {
+      return this.templateSave(req, res);
+    }
+    if (path.startsWith("/api/setup/templates/") && req.method === "DELETE") {
+      const id = decodeURIComponent(path.slice("/api/setup/templates/".length));
+      if (!id) return json(res, 400, { ok: false, message: "Brak id." });
+      const ok = await this.docTemplates.remove(id);
+      return json(res, ok ? 200 : 404, { ok, count: this.docTemplates.count });
+    }
+    if (path === "/api/setup/templates/upload" && req.method === "POST") {
+      return this.templateUpload(req, res);
+    }
+    if (path === "/api/setup/templates/sample" && req.method === "POST") {
+      return this.templateSample(res);
     }
 
     if (path === "/api/setup/skills" && req.method === "GET") {
@@ -278,31 +301,53 @@ export class SetupRoutes {
     }
   }
 
-  private async memorySampleDoc(res: ServerResponse): Promise<boolean> {
-    const sample = `WZÓR DOKUMENTACJI MODUŁU (przykład OKO)
+  private async templateSave(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
+    const body = await readJson(req);
+    const name = String(body.name ?? "").trim();
+    const content = String(body.content ?? "").trim();
+    const description = String(body.description ?? "").trim();
+    const id = body.id ? String(body.id) : undefined;
+    try {
+      const entry = await this.docTemplates.upsert({ id, name, description, content });
+      return json(res, 200, { ok: true, template: entry, count: this.docTemplates.count });
+    } catch (err) {
+      return json(res, 400, { ok: false, message: (err as Error).message });
+    }
+  }
 
-Struktura README / opisu modułu:
-1. Tytuł i jednozdaniowy opis po polsku
-2. Po co istnieje (problem / use case)
-3. Szybki start (instalacja, uruchomienie)
-4. Konfiguracja (.env, kluczowe zmienne)
-5. API / protokół (jeśli dotyczy) — tabela endpointów
-6. Testy (npm test, smoke-test)
+  private async templateUpload(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
+    const body = await readJson(req);
+    const filename = String(body.filename ?? "template.pdf");
+    const name = String(body.name ?? "").trim();
+    const base64 = String(body.base64 ?? "");
+    if (!base64) return json(res, 400, { ok: false, message: "Brak base64." });
+    try {
+      const data = Buffer.from(base64, "base64");
+      const entry = await this.docTemplates.ingestFile(name, filename, data);
+      return json(res, 200, { ok: true, template: entry, count: this.docTemplates.count });
+    } catch (err) {
+      return json(res, 400, { ok: false, message: (err as Error).message });
+    }
+  }
+
+  private async templateSample(res: ServerResponse): Promise<boolean> {
+    const entry = await this.docTemplates.upsert({
+      name: "Wzór README modułu",
+      description: "Przykładowy układ dokumentacji technicznej",
+      content: `WZÓR DOKUMENTACJI MODUŁU
+
+1. Tytuł i jednozdaniowy opis (po polsku)
+2. Po co istnieje — problem / use case
+3. Szybki start — instalacja, uruchomienie
+4. Konfiguracja — kluczowe zmienne .env
+5. API / protokół — tabela endpointów jeśli dotyczy
+6. Testy — npm test, smoke-test
 7. Znane ograniczenia
 
-Styl:
-- Po polsku, zwięźle, bez marketingu
-- Przykłady kodu tylko gdy konieczne
-- Nagłówki ## w markdown
-
-Przy generowaniu nowej dokumentacji naśladuj ten układ i ton.`;
-    const entry = await this.memory.learnText(GLOBAL_MEMORY_DEVICE, sample, {
-      title: "Wzór dokumentacji modułu",
-      kind: "document",
+Styl: zwięźle, po polsku, nagłówki ## w markdown, bez marketingu.`,
       source: "setup-sample",
-      force: true,
     });
-    return json(res, 200, { ok: true, entry: { id: entry.id, title: entry.title } });
+    return json(res, 200, { ok: true, template: { id: entry.id, name: entry.name } });
   }
 
   private async saveSkill(req: IncomingMessage, res: ServerResponse): Promise<boolean> {

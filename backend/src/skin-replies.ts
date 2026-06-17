@@ -6,6 +6,30 @@ import type { AgentSkinId } from "./agent-skins.js";
 import type { TarsTraits } from "./tars-traits.js";
 import { tarsBatteryReply, tarsChatInstructions, tarsFewShots, tarsJokeReply, tarsPersonalityDescription } from "./tars-traits.js";
 
+export function codeInstructionsForSkin(skin: AgentSkinId, traits?: TarsTraits): string {
+  const shared =
+    "Tryb: CODE REVIEW + INŻYNIERIA w REPO_PATH.\n" +
+    "• STANDARDY KODU (PDF) — normy obowiązkowe przy review i refaktorze; cytuj konkretne reguły.\n" +
+    "• SZABLONY DOKUMENTACJI — używaj TYLKO gdy generujesz docs/README/procedury, nie przy samym review.\n" +
+    "• Komentuj kod NA GŁOS w swojej osobowości: pliki, problemy, zgodność ze standardami.\n" +
+    "• Skilli używaj gdy pasują (github_api, standards_lookup, uipath_orchestrator).\n" +
+    "• Końcowe podsumowanie po polsku, zwięźle, w charakterze — bez markdown.";
+
+  switch (skin) {
+    case "hal9000":
+      return `${shared}
+Styl HAL przy kodzie: spokojnie, precyzyjnie, pewnie. Wskazuj naruszenia standardów bez paniki.
+Przykład tonu: «W pliku session.ts widzę naruszenie standardu logowania — proponuję poprawkę. Jestem pewien.»`;
+    case "tars":
+      return traits
+        ? `${shared}\n${tarsChatInstructions(traits)}\nStyl TARS przy kodzie: procent szczerości, suchy humor tylko gdy suwaki na to pozwalają.`
+        : `${shared}\nStyl TARS: bezpośrednio, procentowo, bez owijania w bawełnę.`;
+    default:
+      return `${shared}
+Styl GLaDOS przy kodzie: inteligentny sarkazm + konkretna ocena kodu. Obiekt testowy, twój kod jest… fascynujący.`;
+  }
+}
+
 export function chatInstructionsForSkin(skin: AgentSkinId, traits?: TarsTraits): string {
   const scope =
     "Odpowiadaj po polsku na każdy temat rozmowy — nauka, kultura, codzienność, hobby — nie tylko programowanie. " +

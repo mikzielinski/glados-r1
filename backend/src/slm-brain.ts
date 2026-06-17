@@ -78,6 +78,7 @@ export class SlmBrain implements BrainLike {
     const persona = personaForSkin(skin);
     const tarsBlock = skin === "tars" ? `\n\n${tarsTraitsPrompt(traits)}` : "";
     const memoryBlock = hooks.memoryBlock?.trim() ? `\n\n${hooks.memoryBlock.trim()}` : "";
+    const templatesBlock = hooks.templatesBlock?.trim() ? `\n\n${hooks.templatesBlock.trim()}` : "";
     const temperature = skin === "tars" ? slmTemperatureForTars(traits, 0.48) : 0.48;
     const modeInstructions = modeForIntent(intent, skin, hooks.memoryBlock, traits);
     const generalTopics =
@@ -91,7 +92,7 @@ export class SlmBrain implements BrainLike {
         messages: [
           {
             role: "system",
-            content: `${persona}\n\n${modeInstructions}${generalTopics}\n\n${deviceFactsBlock(deviceFacts)}${tarsBlock}${memoryBlock}\n\n${fewShotForSkin(skin, skin === "tars" ? traits : undefined)}`,
+            content: `${persona}\n\n${modeInstructions}${generalTopics}\n\n${deviceFactsBlock(deviceFacts)}${tarsBlock}${templatesBlock}${memoryBlock}\n\n${fewShotForSkin(skin, skin === "tars" ? traits : undefined)}`,
           },
           ...this.history,
         ],

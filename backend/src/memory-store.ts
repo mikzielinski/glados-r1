@@ -166,7 +166,7 @@ export class MemoryStore {
       ? `Imię użytkownika: ${userName}. NIGDY nie mów «Dave», chyba że imię to Dave.\n`
       : "NIGDY nie nazywaj użytkownika «Dave».\n";
     const header =
-      `PAMIĘĆ KONTEKSTOWA (${combined.length} wpisów — stosuj w odpowiedziach, nie wymyślaj poza tym):\n` +
+      `FAKTY I NOTATKI (${combined.length} wpisów — kontekst użytkownika, NIE szablony docs):\n` +
       nameLine;
     let body = "";
     for (const entry of ranked) {

@@ -1,0 +1,13 @@
+{
+  "templates": [
+    {
+      "id": "fd31fc07-873c-418c-acda-ce77fefa3c29",
+      "name": "Wzór README modułu",
+      "description": "Przykładowy układ dokumentacji technicznej",
+      "content": "WZÓR DOKUMENTACJI MODUŁU\n\n1. Tytuł i jednozdaniowy opis (po polsku)\n2. Po co istnieje — problem / use case\n3. Szybki start — instalacja, uruchomienie\n4. Konfiguracja — kluczowe zmienne .env\n5. API / protokół — tabela endpointów jeśli dotyczy\n6. Testy — npm test, smoke-test\n7. Znane ograniczenia\n\nStyl: zwięźle, po polsku, nagłówki ## w markdown, bez marketingu.",
+      "source": "setup-sample",
+      "createdAt": 1781733669707,
+      "updatedAt": 1781733669707
+    }
+  ]
+}

@@ -10,7 +10,7 @@ import {
   netInstructions,
 } from "./persona.js";
 import { type AgentSkinId, personaForSkin } from "./agent-skins.js";
-import { chatInstructionsForSkin } from "./skin-replies.js";
+import { chatInstructionsForSkin, codeInstructionsForSkin } from "./skin-replies.js";
 import { normalizeTarsTraits, tarsTraitsPrompt } from "./tars-traits.js";
 import type { StandardsRegistry } from "./standards.js";
 
@@ -27,8 +27,10 @@ export interface TurnHooks {
   skin?: AgentSkinId;
   /** TARS honesty / humor / sarcasm sliders (0–100). */
   tarsTraits?: import("./tars-traits.js").TarsTraits;
-  /** Persistent user/device memory block for prompts. */
+  /** Persistent user/device memory block (facts & notes). */
   memoryBlock?: string;
+  /** Named doc templates block (separate from memory facts). */
+  templatesBlock?: string;
 }
 
 export class TurnCancelledError extends Error {
@@ -151,7 +153,7 @@ export class Brain implements BrainLike {
     const traits = normalizeTarsTraits(hooks.tarsTraits);
     const instructions =
       modeOverride ??
-      (intent === "code" ? codeInstructions() :
+      (intent === "code" ? codeInstructionsForSkin(skin, skin === "tars" ? traits : undefined) :
         intent === "net" ? netInstructions() :
         chatInstructionsForSkin(skin, skin === "tars" ? traits : undefined));
 
@@ -166,10 +168,11 @@ export class Brain implements BrainLike {
         ? `\n\n${await this.standards.getPromptBlock()}`
         : "";
     const memoryBlock = hooks.memoryBlock?.trim() ? `\n\n${hooks.memoryBlock.trim()}` : "";
+    const templatesBlock = hooks.templatesBlock?.trim() ? `\n\n${hooks.templatesBlock.trim()}` : "";
     const tarsBlock = skin === "tars" ? `\n\n${tarsTraitsPrompt(traits)}` : "";
     const persona = personaForSkin(skin);
     const prompt =
-      buildPrompt(persona, instructions, transcript) + skillHint + standardsBlock + memoryBlock + tarsBlock;
+      buildPrompt(persona, instructions, transcript) + skillHint + standardsBlock + templatesBlock + memoryBlock + tarsBlock;
 
     const run = await this.sendWithRetry(agent, prompt, customTools);
     this.activeRun = run;

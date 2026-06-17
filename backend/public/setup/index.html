@@ -96,21 +96,50 @@
         </div>
       </section>
 
-      <!-- Step 3 Memory -->
-      <section class="step" data-step="3" id="memory">
-        <h2>Pamięć &amp; pliki wiedzy</h2>
-        <p class="lead">Globalna baza wiedzy OKO — PDF/TXT trafiają do pamięci kontekstowej (wszystkie urządzenia).</p>
-        <div class="status show" id="memory-count">Ładowanie…</div>
-        <label>Notatka / fakt
-          <textarea id="memory-text" rows="4" placeholder="np. Preferuję odpowiedzi po polsku. Projekt X używa Kotlin…"></textarea>
+      <!-- Step 3 Templates + Memory -->
+      <section class="step" data-step="3" id="knowledge">
+        <h2>Szablony &amp; wiedza</h2>
+        <p class="lead">
+          <strong>Szablony dokumentacji</strong> — nazwa + treść wzoru (README, procedury).
+          <strong>Fakty</strong> — krótkie notatki kontekstowe. Osobno od <em>standardów kodu</em> (krok 4).
+        </p>
+
+        <h3 class="sub">Szablony dokumentacji</h3>
+        <div class="status show" id="templates-count">Ładowanie…</div>
+        <div class="table-wrap">
+          <table class="data-table" id="templates-table">
+            <thead>
+              <tr><th>Nazwa</th><th>Opis</th><th>Znaków</th><th></th></tr>
+            </thead>
+            <tbody id="templates-body"></tbody>
+          </table>
+        </div>
+        <label>Nazwa szablonu<input id="tpl-name" placeholder="np. README API" /></label>
+        <label>Opis (krótko)<input id="tpl-desc" placeholder="np. Dokumentacja endpointów REST" /></label>
+        <label>Treść szablonu
+          <textarea id="tpl-content" rows="5" placeholder="Sekcje, układ, styl…"></textarea>
         </label>
         <div class="actions row">
-          <button class="btn primary" id="memory-learn">Zapamiętaj notatkę</button>
+          <button class="btn primary" id="tpl-save">Zapisz szablon</button>
           <label class="btn">
-            Dodaj plik PDF/TXT
+            Import PDF/TXT → szablon
+            <input id="tpl-file" type="file" accept=".pdf,.txt,.md" hidden />
+          </label>
+          <button class="btn" id="tpl-sample">Przykładowy wzór</button>
+        </div>
+        <div class="status" id="templates-status"></div>
+
+        <h3 class="sub">Fakty i notatki</h3>
+        <div class="status show" id="memory-count">Ładowanie…</div>
+        <label>Notatka / fakt
+          <textarea id="memory-text" rows="3" placeholder="np. Preferuję odpowiedzi po polsku…"></textarea>
+        </label>
+        <div class="actions row">
+          <button class="btn" id="memory-learn">Zapamiętaj notatkę</button>
+          <label class="btn">
+            Plik → pamięć
             <input id="memory-file" type="file" accept=".pdf,.txt,.md,.csv,.json" hidden />
           </label>
-          <button class="btn" id="memory-sample-doc">Przykładowy wzór docs</button>
         </div>
         <div class="status" id="memory-status"></div>
         <div class="actions">
@@ -119,12 +148,12 @@
         </div>
       </section>
 
-      <!-- Step 4 Standards -->
+      <!-- Step 4 Code standards -->
       <section class="step" data-step="4" id="standards">
         <h2>Standardy kodu (PDF)</h2>
         <p class="lead">
-          Normy firmowe dla agenta chmurowego — code review, refaktor, GitHub, UiPath.
-          Wgrywasz tutaj; OKO wstrzykuje je do promptu przy zadaniach <code>code</code>.
+          Normy obowiązkowe dla code review i refaktoru — agent stosuje je mówiąc o kodzie
+          w stylu aktywnej skórki (HAL / GLaDOS / TARS).
         </p>
         <div class="status show" id="standards-count">Ładowanie…</div>
         <ul class="skill-list" id="standards-list"></ul>

@@ -13,6 +13,7 @@ import { formatLocationFacts, isPlausibleLocation, reverseGeocodeLabel } from ".
 import type { SkillRegistry } from "./skills.js";
 import type { StandardsRegistry } from "./standards.js";
 import type { MemoryStore } from "./memory-store.js";
+import type { DocTemplateStore } from "./doc-templates.js";
 import {
   isForceLearnQuery,
   isMemoryClearQuery,
@@ -20,6 +21,7 @@ import {
   memoryListReply,
   parseLearnPayload,
 } from "./memory-router.js";
+import { isTemplateListQuery, templateListReply } from "./template-router.js";
 import {
   applyTarsTraitChange,
   parseTarsTraitCommand,
@@ -93,6 +95,8 @@ export class Session {
   private deviceMemoryId = "";
   private lastUserTranscript = "";
   private lastAssistantText = "";
+  private codeCommentCount = 0;
+  private lastCodeCommentAt = 0;
 
   constructor(
     readonly id: string,
@@ -104,6 +108,7 @@ export class Session {
     skills?: SkillRegistry,
     standards?: StandardsRegistry,
     private readonly memory?: MemoryStore,
+    private readonly docTemplates?: DocTemplateStore,
   ) {
     this.ws = ws;
     this.inputSampleRate = cfg.inputSampleRate;
@@ -370,6 +375,14 @@ export class Session {
     return false;
   }
 
+  private async tryTemplateTurn(transcript: string): Promise<boolean> {
+    if (!this.docTemplates) return false;
+    if (!isTemplateListQuery(transcript)) return false;
+    const reply = await templateListReply(this.docTemplates, this.agentSkin);
+    await this.speak(reply, transcript);
+    return true;
+  }
+
   private async tryTarsTraitsTurn(transcript: string): Promise<boolean> {
     if (this.agentSkin !== "tars") return false;
 
@@ -554,6 +567,7 @@ export class Session {
     this.lastUserTranscript = transcript.trim();
     if (!needsCloudBrain(intent)) {
       if (await this.tryTarsTraitsTurn(transcript)) return;
+      if (await this.tryTemplateTurn(transcript)) return;
       if (await this.tryMemoryTurn(transcript)) return;
       if (isLocationQuery(transcript)) await this.resolveLocationLabel();
       const instant = tryDeviceReply(transcript, this.deviceContext, this.agentSkin);
@@ -575,6 +589,9 @@ export class Session {
     let memoryBlock = this.memory
       ? await this.memory.getPromptBlock(this.memoryKey(), transcript)
       : "";
+    const templatesBlock = this.docTemplates
+      ? await this.docTemplates.getPromptBlock(transcript)
+      : "";
 
     if (this.cfg.webSearchEnabled && shouldPrefetchWeb(transcript, intent, memoryBlock)) {
       try {
@@ -591,15 +608,21 @@ export class Session {
     }
 
     const cloudTurn = needsCloudBrain(intent);
-    if (cloudTurn) this.startCloudProgress();
+    if (cloudTurn) {
+      this.startCloudProgress();
+      this.codeCommentCount = 0;
+      this.lastCodeCommentAt = 0;
+    }
 
     try {
       const result = await this.brain.handleTurn(enriched, intent, {
         onWorking: () => this.setStatus("working"),
+        onAssistantText: cloudTurn ? (text) => { void this.maybeSpeakCodeComment(text); } : undefined,
         isCancelled: () => this.cancelled,
         skin: this.agentSkin,
         tarsTraits: this.deviceContext.tarsTraits,
         memoryBlock,
+        templatesBlock,
       });
       if (this.cancelled) return;
       await this.speak(result.spoken, transcript);
@@ -668,6 +691,24 @@ export class Session {
       clearInterval(this.progressTimer);
       this.progressTimer = undefined;
     }
+  }
+
+  /** Live code-review commentary while cloud agent streams (in skin voice). */
+  private async maybeSpeakCodeComment(text: string): Promise<void> {
+    if (this.codeCommentCount >= 2) return;
+    if (Date.now() - this.lastCodeCommentAt < 8000) return;
+    if (this.asideSpeaking) return;
+
+    let clean = text.replace(/```[\s\S]*?```/g, " ").replace(/[#*`[\]]/g, "").replace(/\s+/g, " ").trim();
+    if (clean.length < 80 || /^[{[\]"]/.test(clean)) return;
+
+    const cut = clean.search(/[.!?…]\s+[A-ZĄĆĘŁŃÓŚŹŻ]/);
+    const snippet = (cut > 60 && cut < 320 ? clean.slice(0, cut + 1) : clean.slice(0, 280)).trim();
+    if (snippet.length < 60) return;
+
+    this.codeCommentCount++;
+    this.lastCodeCommentAt = Date.now();
+    await this.speakAside(snippet);
   }
 
   private async speakAside(text: string): Promise<void> {

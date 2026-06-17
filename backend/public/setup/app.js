@@ -1,6 +1,7 @@
-const STEP_LABELS = ["Start", "GitHub", "UiPath", "Pamięć", "Standardy", "Skille", "Gotowe"];
+const STEP_LABELS = ["Start", "GitHub", "UiPath", "Szablony", "Standardy", "Skille", "Gotowe"];
 let currentStep = 0;
 let statusData = {};
+let editingTemplateId = "";
 
 const stepsEl = document.getElementById("steps");
 const sections = [...document.querySelectorAll(".step")];
@@ -18,7 +19,10 @@ function go(step) {
   currentStep = Math.max(0, Math.min(STEP_LABELS.length - 1, step));
   sections.forEach((s) => s.classList.toggle("active", Number(s.dataset.step) === currentStep));
   renderSteps();
-  if (currentStep === 3) refreshMemoryPanel();
+  if (currentStep === 3) {
+    refreshTemplatesPanel();
+    refreshMemoryPanel();
+  }
   if (currentStep === 4) refreshStandardsPanel();
   if (currentStep === 5) refreshSkillsPanel();
   if (currentStep === 6) renderSummary();
@@ -68,11 +72,77 @@ async function refreshStatus() {
   }
 }
 
+async function refreshTemplatesPanel() {
+  const countEl = document.getElementById("templates-count");
+  const body = document.getElementById("templates-body");
+  try {
+    const r = await api("/api/setup/templates");
+    showStatus(countEl, `Szablony dokumentacji: ${r.count}`, r.count > 0 ? "ok" : "info");
+    body.innerHTML = (r.templates || [])
+      .map(
+        (t) =>
+          `<tr data-id="${t.id}">` +
+          `<td><strong>${escapeHtml(t.name)}</strong></td>` +
+          `<td>${escapeHtml(t.description || "—")}</td>` +
+          `<td>${t.content.length}</td>` +
+          `<td><button type="button" class="btn ghost tpl-edit">Edytuj</button> ` +
+          `<button type="button" class="btn ghost tpl-del">Usuń</button></td></tr>`,
+      )
+      .join("") ||
+      `<tr><td colspan="4" class="muted">Brak szablonów — dodaj nazwę i treść poniżej.</td></tr>`;
+
+    body.querySelectorAll(".tpl-edit").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const row = btn.closest("tr");
+        const id = row?.dataset.id;
+        const t = (r.templates || []).find((x) => x.id === id);
+        if (!t) return;
+        editingTemplateId = t.id;
+        document.getElementById("tpl-name").value = t.name;
+        document.getElementById("tpl-desc").value = t.description || "";
+        document.getElementById("tpl-content").value = t.content;
+        showStatus(document.getElementById("templates-status"), `Edycja: ${t.name}`, "info");
+      });
+    });
+    body.querySelectorAll(".tpl-del").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = btn.closest("tr")?.dataset.id;
+        if (!id || !confirm("Usunąć ten szablon?")) return;
+        try {
+          await api(`/api/setup/templates/${encodeURIComponent(id)}`, { method: "DELETE" });
+          if (editingTemplateId === id) clearTemplateForm();
+          await refreshTemplatesPanel();
+          await refreshStatus();
+        } catch (e) {
+          showStatus(document.getElementById("templates-status"), e.message, "err");
+        }
+      });
+    });
+  } catch (e) {
+    showStatus(countEl, e.message, "err");
+  }
+}
+
+function clearTemplateForm() {
+  editingTemplateId = "";
+  document.getElementById("tpl-name").value = "";
+  document.getElementById("tpl-desc").value = "";
+  document.getElementById("tpl-content").value = "";
+}
+
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 async function refreshMemoryPanel() {
   const el = document.getElementById("memory-count");
   try {
     const r = await api("/api/setup/memory?deviceId=global");
-    showStatus(el, `Globalna pamięć: ${r.count} wpisów`, "info");
+    showStatus(el, `Globalna pamięć (fakty): ${r.count} wpisów`, "info");
   } catch (e) {
     showStatus(el, e.message, "err");
   }
@@ -139,11 +209,15 @@ function renderSummary() {
       <span class="badge ${ui.connected ? "on" : "off"}">${ui.connected ? "OK" : "brak"}</span>
     </div>
     <div class="card">
-      <div><h3>Pamięć globalna</h3><small>${statusData.memoryGlobalCount ?? 0} wpisów</small></div>
+      <div><h3>Szablony docs</h3><small>${statusData.templatesCount ?? 0} szablonów</small></div>
+      <span class="badge ${(statusData.templatesCount ?? 0) > 0 ? "on" : "off"}">${(statusData.templatesCount ?? 0) > 0 ? "OK" : "brak"}</span>
+    </div>
+    <div class="card">
+      <div><h3>Pamięć (fakty)</h3><small>${statusData.memoryGlobalCount ?? 0} wpisów</small></div>
       <span class="badge ${(statusData.memoryGlobalCount ?? 0) > 0 ? "on" : "off"}">${(statusData.memoryGlobalCount ?? 0) > 0 ? "OK" : "pusta"}</span>
     </div>
     <div class="card">
-      <div><h3>Standardy PDF</h3><small>${statusData.standardsCount ?? 0} dokumentów</small></div>
+      <div><h3>Standardy kodu</h3><small>${statusData.standardsCount ?? 0} PDF</small></div>
       <span class="badge ${(statusData.standardsCount ?? 0) > 0 ? "on" : "off"}">${(statusData.standardsCount ?? 0) > 0 ? "OK" : "brak"}</span>
     </div>
     <div class="card">
@@ -229,6 +303,58 @@ document.getElementById("ui-oauth-start").addEventListener("click", () => {
   window.location.href = "/api/setup/uipath/start";
 });
 
+document.getElementById("tpl-save").addEventListener("click", async () => {
+  const el = document.getElementById("templates-status");
+  const name = document.getElementById("tpl-name").value.trim();
+  const content = document.getElementById("tpl-content").value.trim();
+  const description = document.getElementById("tpl-desc").value.trim();
+  if (!name || !content) return showStatus(el, "Podaj nazwę i treść szablonu.", "err");
+  try {
+    const body = { name, content, description };
+    if (editingTemplateId) body.id = editingTemplateId;
+    const r = await api("/api/setup/templates", { method: "POST", body: JSON.stringify(body) });
+    showStatus(el, `Zapisano: ${r.template.name}`, "ok");
+    clearTemplateForm();
+    await refreshTemplatesPanel();
+    await refreshStatus();
+  } catch (e) {
+    showStatus(el, e.message, "err");
+  }
+});
+
+document.getElementById("tpl-file").addEventListener("change", async (ev) => {
+  const el = document.getElementById("templates-status");
+  const file = ev.target.files?.[0];
+  if (!file) return;
+  const name = document.getElementById("tpl-name").value.trim() || file.name.replace(/\.[^.]+$/, "");
+  try {
+    const buf = await file.arrayBuffer();
+    const r = await api("/api/setup/templates/upload", {
+      method: "POST",
+      body: JSON.stringify({ filename: file.name, name, base64: arrayBufferToBase64(buf) }),
+    });
+    showStatus(el, `Import: ${r.template.name}`, "ok");
+    ev.target.value = "";
+    clearTemplateForm();
+    await refreshTemplatesPanel();
+    await refreshStatus();
+  } catch (e) {
+    showStatus(el, e.message, "err");
+  }
+});
+
+document.getElementById("tpl-sample").addEventListener("click", async () => {
+  const el = document.getElementById("templates-status");
+  try {
+    const r = await api("/api/setup/templates/sample", { method: "POST", body: "{}" });
+    showStatus(el, `Dodano: ${r.template.name}`, "ok");
+    await refreshTemplatesPanel();
+    await refreshStatus();
+  } catch (e) {
+    showStatus(el, e.message, "err");
+  }
+});
+
 document.getElementById("memory-learn").addEventListener("click", async () => {
   const el = document.getElementById("memory-status");
   const text = document.getElementById("memory-text").value.trim();
@@ -260,18 +386,6 @@ document.getElementById("memory-file").addEventListener("change", async (ev) => 
     });
     showStatus(el, `Dodano plik: ${r.entry.title}`, "ok");
     ev.target.value = "";
-    await refreshMemoryPanel();
-    await refreshStatus();
-  } catch (e) {
-    showStatus(el, e.message, "err");
-  }
-});
-
-document.getElementById("memory-sample-doc").addEventListener("click", async () => {
-  const el = document.getElementById("memory-status");
-  try {
-    const r = await api("/api/setup/memory/sample-doc", { method: "POST", body: "{}" });
-    showStatus(el, `Dodano: ${r.entry.title}`, "ok");
     await refreshMemoryPanel();
     await refreshStatus();
   } catch (e) {
@@ -405,7 +519,7 @@ refreshStatus().catch(() => {});
 
 if (window.location.hash === "#github") go(1);
 if (window.location.hash === "#uipath") go(2);
-if (window.location.hash === "#memory") go(3);
+if (window.location.hash === "#knowledge" || window.location.hash === "#memory") go(3);
 if (window.location.hash === "#standards") go(4);
 if (window.location.hash === "#skills") go(5);
 if (window.location.hash === "#summary") go(6);

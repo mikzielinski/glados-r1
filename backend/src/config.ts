@@ -75,6 +75,10 @@ export interface Config {
   memoryMaxEntryChars: number;
   memoryMaxEntries: number;
   memoryMaxUploadBytes: number;
+  templateDir: string;
+  templateMaxChars: number;
+  templateMaxEntryChars: number;
+  templateMaxEntries: number;
   n8nBaseUrl: string;
   n8nAuthHeader: string;
   serperApiKey: string;
@@ -145,6 +149,10 @@ export function loadConfig(): Config {
     memoryMaxEntryChars: num("MEMORY_MAX_ENTRY_CHARS", 12_000),
     memoryMaxEntries: num("MEMORY_MAX_ENTRIES", 200),
     memoryMaxUploadBytes: num("MEMORY_MAX_UPLOAD_BYTES", 4 * 1024 * 1024),
+    templateDir: opt("TEMPLATE_DIR", resolve(process.cwd(), "data/templates")),
+    templateMaxChars: num("TEMPLATE_MAX_CHARS", 10_000),
+    templateMaxEntryChars: num("TEMPLATE_MAX_ENTRY_CHARS", 16_000),
+    templateMaxEntries: num("TEMPLATE_MAX_ENTRIES", 100),
     n8nBaseUrl: local.n8nBaseUrl || opt("N8N_BASE_URL"),
     n8nAuthHeader: local.n8nAuthHeader || opt("N8N_AUTH_HEADER"),
     serperApiKey: local.serperApiKey || opt("SERPER_API_KEY"),
