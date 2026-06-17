@@ -1,4 +1,4 @@
-const STEP_LABELS = ["Start", "GitHub", "UiPath", "Pamięć", "Skille", "Gotowe"];
+const STEP_LABELS = ["Start", "GitHub", "UiPath", "Pamięć", "Standardy", "Skille", "Gotowe"];
 let currentStep = 0;
 let statusData = {};
 
@@ -19,8 +19,9 @@ function go(step) {
   sections.forEach((s) => s.classList.toggle("active", Number(s.dataset.step) === currentStep));
   renderSteps();
   if (currentStep === 3) refreshMemoryPanel();
-  if (currentStep === 4) refreshSkillsPanel();
-  if (currentStep === 5) renderSummary();
+  if (currentStep === 4) refreshStandardsPanel();
+  if (currentStep === 5) refreshSkillsPanel();
+  if (currentStep === 6) renderSummary();
 }
 
 function showStatus(el, text, kind = "info") {
@@ -77,6 +78,37 @@ async function refreshMemoryPanel() {
   }
 }
 
+async function refreshStandardsPanel() {
+  const countEl = document.getElementById("standards-count");
+  const list = document.getElementById("standards-list");
+  try {
+    const r = await api("/api/setup/standards");
+    showStatus(countEl, `Załadowane standardy PDF: ${r.count}`, r.count > 0 ? "ok" : "info");
+    list.innerHTML = (r.standards || [])
+      .map(
+        (s) =>
+          `<li><strong>${s.name}</strong> — ${s.chars} znaków tekstu<br /><code>${s.filename}</code> ` +
+          `<button class="btn ghost standards-del" data-file="${encodeURIComponent(s.filename)}" type="button">Usuń</button></li>`,
+      )
+      .join("") || "<li>Brak PDF — dodaj standard kodu lub code review checklist.</li>";
+    list.querySelectorAll(".standards-del").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const file = decodeURIComponent(btn.dataset.file || "");
+        if (!file || !confirm(`Usunąć ${file}?`)) return;
+        try {
+          await api(`/api/setup/standards/${encodeURIComponent(file)}`, { method: "DELETE" });
+          await refreshStandardsPanel();
+          await refreshStatus();
+        } catch (e) {
+          showStatus(document.getElementById("standards-status"), e.message, "err");
+        }
+      });
+    });
+  } catch (e) {
+    showStatus(countEl, e.message, "err");
+  }
+}
+
 async function refreshSkillsPanel() {
   try {
     const r = await api("/api/setup/skills");
@@ -109,6 +141,10 @@ function renderSummary() {
     <div class="card">
       <div><h3>Pamięć globalna</h3><small>${statusData.memoryGlobalCount ?? 0} wpisów</small></div>
       <span class="badge ${(statusData.memoryGlobalCount ?? 0) > 0 ? "on" : "off"}">${(statusData.memoryGlobalCount ?? 0) > 0 ? "OK" : "pusta"}</span>
+    </div>
+    <div class="card">
+      <div><h3>Standardy PDF</h3><small>${statusData.standardsCount ?? 0} dokumentów</small></div>
+      <span class="badge ${(statusData.standardsCount ?? 0) > 0 ? "on" : "off"}">${(statusData.standardsCount ?? 0) > 0 ? "OK" : "brak"}</span>
     </div>
     <div class="card">
       <div><h3>Skille</h3><small>${(statusData.skills || []).join(", ") || "brak"}</small></div>
@@ -231,6 +267,40 @@ document.getElementById("memory-file").addEventListener("change", async (ev) => 
   }
 });
 
+document.getElementById("memory-sample-doc").addEventListener("click", async () => {
+  const el = document.getElementById("memory-status");
+  try {
+    const r = await api("/api/setup/memory/sample-doc", { method: "POST", body: "{}" });
+    showStatus(el, `Dodano: ${r.entry.title}`, "ok");
+    await refreshMemoryPanel();
+    await refreshStatus();
+  } catch (e) {
+    showStatus(el, e.message, "err");
+  }
+});
+
+document.getElementById("standards-file").addEventListener("change", async (ev) => {
+  const el = document.getElementById("standards-status");
+  const file = ev.target.files?.[0];
+  if (!file) return;
+  try {
+    const buf = await file.arrayBuffer();
+    const b64 = arrayBufferToBase64(buf);
+    const r = await api("/api/setup/standards/upload", {
+      method: "POST",
+      body: JSON.stringify({ filename: file.name, base64: b64 }),
+    });
+    showStatus(el, `Wgrano: ${r.standard.name} (${r.standard.chars} znaków)`, "ok");
+    ev.target.value = "";
+    await refreshStandardsPanel();
+    await refreshStatus();
+  } catch (e) {
+    showStatus(el, e.message, "err");
+  }
+});
+
+document.getElementById("standards-reload").addEventListener("click", () => refreshStandardsPanel());
+
 document.getElementById("n8n-save").addEventListener("click", async () => {
   const el = document.getElementById("skills-status");
   try {
@@ -327,7 +397,7 @@ if (params.get("github") === "connected") {
 }
 if (params.get("uipath") === "connected") {
   showStatus(document.getElementById("ui-status"), "UiPath połączony.", "ok");
-  go(5);
+  go(6);
 }
 
 renderSteps();
@@ -336,5 +406,6 @@ refreshStatus().catch(() => {});
 if (window.location.hash === "#github") go(1);
 if (window.location.hash === "#uipath") go(2);
 if (window.location.hash === "#memory") go(3);
-if (window.location.hash === "#skills") go(4);
-if (window.location.hash === "#summary") go(5);
+if (window.location.hash === "#standards") go(4);
+if (window.location.hash === "#skills") go(5);
+if (window.location.hash === "#summary") go(6);

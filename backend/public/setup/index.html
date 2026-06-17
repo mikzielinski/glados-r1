@@ -110,6 +110,7 @@
             Dodaj plik PDF/TXT
             <input id="memory-file" type="file" accept=".pdf,.txt,.md,.csv,.json" hidden />
           </label>
+          <button class="btn" id="memory-sample-doc">Przykładowy wzór docs</button>
         </div>
         <div class="status" id="memory-status"></div>
         <div class="actions">
@@ -118,8 +119,35 @@
         </div>
       </section>
 
-      <!-- Step 4 Skills -->
-      <section class="step" data-step="4" id="skills">
+      <!-- Step 4 Standards -->
+      <section class="step" data-step="4" id="standards">
+        <h2>Standardy kodu (PDF)</h2>
+        <p class="lead">
+          Normy firmowe dla agenta chmurowego — code review, refaktor, GitHub, UiPath.
+          Wgrywasz tutaj; OKO wstrzykuje je do promptu przy zadaniach <code>code</code>.
+        </p>
+        <div class="status show" id="standards-count">Ładowanie…</div>
+        <ul class="skill-list" id="standards-list"></ul>
+        <div class="actions row">
+          <label class="btn primary">
+            Dodaj PDF standardu
+            <input id="standards-file" type="file" accept=".pdf,application/pdf" hidden />
+          </label>
+          <button class="btn" id="standards-reload">Odśwież listę</button>
+        </div>
+        <div class="hint box">
+          Wymaga <code>poppler</code> (<code>brew install poppler</code>). Pliki trafiają do
+          <code>standards/</code> w repo — możesz też skopiować ręcznie i zrestartować backend.
+        </div>
+        <div class="status" id="standards-status"></div>
+        <div class="actions">
+          <button class="btn ghost" data-prev>← Wstecz</button>
+          <button class="btn primary" data-next>Dalej →</button>
+        </div>
+      </section>
+
+      <!-- Step 5 Skills -->
+      <section class="step" data-step="5" id="skills">
         <h2>Skille &amp; n8n</h2>
         <p class="lead">Import skilli (webhooki n8n lub lokalne endpointy). Agent chmurowy użyje ich przy zadaniach code/net.</p>
 
@@ -149,8 +177,8 @@
         </div>
       </section>
 
-      <!-- Step 5 Summary -->
-      <section class="step" data-step="5" id="summary">
+      <!-- Step 6 Summary -->
+      <section class="step" data-step="6" id="summary">
         <h2>Podsumowanie</h2>
         <div class="cards" id="summary-cards"></div>
         <div class="actions row">

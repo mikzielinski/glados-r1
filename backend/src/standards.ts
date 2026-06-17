@@ -1,5 +1,5 @@
-import { readdir, readFile, stat } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { mkdir, readdir, readFile, stat, unlink, writeFile } from "node:fs/promises";
+import { basename, join, resolve } from "node:path";
 import { spawn } from "node:child_process";
 import type { Config } from "./config.js";
 import { logger } from "./logger.js";
@@ -34,6 +34,47 @@ export class StandardsRegistry {
     return this.docs.map((d) => d.name);
   }
 
+  list(): { filename: string; name: string; chars: number }[] {
+    return this.docs.map((d) => ({
+      filename: d.filename,
+      name: d.name,
+      chars: d.text.length,
+    }));
+  }
+
+  /** Save a PDF to STANDARDS_DIR and rescan immediately. */
+  async savePdf(filename: string, data: Buffer): Promise<StandardDoc> {
+    const safe = sanitizePdfFilename(filename);
+    if (data.length < 64) throw new Error("Plik PDF jest pusty lub uszkodzony.");
+    if (data.length > 20 * 1024 * 1024) throw new Error("PDF za duży (max 20 MB).");
+    await mkdir(this.dir, { recursive: true });
+    const path = join(this.dir, safe);
+    await writeFile(path, data);
+    this.lastScanMs = 0;
+    await this.scan();
+    const doc = this.docs.find((d) => d.filename === safe);
+    if (!doc) {
+      throw new Error(
+        "PDF zapisany, ale nie udało się wyciągnąć tekstu — sprawdź czy poppler (pdftotext) jest zainstalowany.",
+      );
+    }
+    return doc;
+  }
+
+  /** Remove a PDF from STANDARDS_DIR. */
+  async deletePdf(filename: string): Promise<boolean> {
+    const safe = sanitizePdfFilename(filename);
+    const path = join(this.dir, safe);
+    try {
+      await unlink(path);
+      this.lastScanMs = 0;
+      await this.scan();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   async refreshIfStale(maxAgeMs = 5000): Promise<void> {
     if (Date.now() - this.lastScanMs < maxAgeMs) return;
     await this.scan();
@@ -42,7 +83,7 @@ export class StandardsRegistry {
   async getPromptBlock(maxChars = this.cfg.standardsMaxChars): Promise<string> {
     await this.refreshIfStale();
     if (this.docs.length === 0) {
-      return "STANDARDY PDF: brak — wrzuć pliki *.pdf do katalogu standards/ i zrestartuj backend.";
+      return "STANDARDY PDF: brak — wrzuć pliki *.pdf do katalogu standards/ lub wgraj w /setup → Standardy kodu.";
     }
 
     const header = `STANDARDY PDF (${this.docs.length} dokumentów) — stosuj przy kodzie, review i automatyzacji:\n`;
@@ -119,4 +160,11 @@ function pdftotext(pdfPath: string): Promise<string> {
       else reject(new Error(err.slice(-200) || `pdftotext exit ${code}`));
     });
   });
+}
+
+function sanitizePdfFilename(filename: string): string {
+  let base = basename(filename.trim()).replace(/[^\w.\- ()ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]+/g, "_");
+  if (!base.toLowerCase().endsWith(".pdf")) base += ".pdf";
+  if (base.length < 5) throw new Error("Nieprawidłowa nazwa pliku PDF.");
+  return base;
 }

@@ -1,15 +1,40 @@
-# Standardy PDF (GLaDOS)
+# Standardy PDF (OKO)
 
-Wrzuć tutaj swoje standardy firmowe jako pliki **`.pdf`**.
+Normy firmowe dla **agenta chmurowego** (code review, refaktor, GitHub, UiPath).
 
-Backend przy starcie wyciąga tekst (`pdftotext` z pakietu poppler) i podaje go agentowi chmurowemu przy pracy z kodem, GitHubem i UiPath.
+## Sposób 1 — panel setup (zalecane)
+
+1. Zainstaluj poppler: `brew install poppler`
+2. Otwórz **http://&lt;ip-mac&gt;:8787/setup#standards**
+3. Kliknij **Dodaj PDF standardu**
+
+Backend zapisuje plik tutaj i od razu indeksuje tekst (`pdftotext`).
+
+## Sposób 2 — ręcznie
 
 ```bash
-brew install poppler   # jednorazowo — pdftotext
+brew install poppler   # jednorazowo
 cp ~/Downloads/Moje-Standardy.pdf standards/
 ./scripts/restart-backend.sh
 ```
 
 Sprawdź w logu: `standard loaded: Moje-Standardy.pdf`
 
-W `.env` ustaw `BRAIN_MODE=hybrid` — rozmowa na R1 lokalnie, kod/integracje w chmurze (Cursor + skilli n8n).
+## Przykład
+
+W repo jest `OKO-Code-Review-Przyklad.pdf` — demo do testów. Zastąp własnymi normami.
+
+## Konfiguracja (.env)
+
+```
+STANDARDS_DIR=/Users/you/glados-r1/standards
+STANDARDS_MAX_CHARS=14000
+```
+
+## Różnica: standardy vs pamięć
+
+| | Standardy PDF | Pamięć globalna |
+|--|---------------|-----------------|
+| Cel | Obowiązkowe reguły kodu | Wzorce docs, fakty, notatki |
+| Upload | `/setup#standards` | `/setup#memory` |
+| Kto używa | Agent chmurowy (`code`) | SLM + agent chmurowy |

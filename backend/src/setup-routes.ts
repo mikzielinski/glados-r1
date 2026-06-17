@@ -165,6 +165,30 @@ export class SetupRoutes {
       return json(res, 200, { ok: true, cleared: n, deviceId });
     }
 
+    if (path === "/api/setup/standards" && req.method === "GET") {
+      await this.standards.refreshIfStale(0);
+      return json(res, 200, {
+        ok: true,
+        count: this.standards.count,
+        standards: this.standards.list(),
+        dir: resolve(this.cfg.standardsDir),
+      });
+    }
+    if (path === "/api/setup/standards/upload" && req.method === "POST") {
+      return this.standardsUpload(req, res);
+    }
+    if (path.startsWith("/api/setup/standards/") && req.method === "DELETE") {
+      const filename = decodeURIComponent(path.slice("/api/setup/standards/".length));
+      if (!filename || filename.includes("..")) {
+        return json(res, 400, { ok: false, message: "Nieprawidłowa nazwa pliku." });
+      }
+      const ok = await this.standards.deletePdf(filename);
+      return json(res, ok ? 200 : 404, { ok, count: this.standards.count });
+    }
+    if (path === "/api/setup/memory/sample-doc" && req.method === "POST") {
+      return this.memorySampleDoc(res);
+    }
+
     if (path === "/api/setup/skills" && req.method === "GET") {
       const list = await readSkillsFile(this.cfg);
       const local = await loadLocalConfigFile();
@@ -234,6 +258,51 @@ export class SetupRoutes {
     const data = Buffer.from(base64, "base64");
     const entry = await this.memory.ingestFile(deviceId, filename, data, body.force === true);
     return json(res, 200, { ok: true, entry: { id: entry.id, title: entry.title }, deviceId });
+  }
+
+  private async standardsUpload(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
+    const body = await readJson(req);
+    const filename = String(body.filename ?? "standard.pdf");
+    const base64 = String(body.base64 ?? "");
+    if (!base64) return json(res, 400, { ok: false, message: "Brak base64." });
+    try {
+      const data = Buffer.from(base64, "base64");
+      const doc = await this.standards.savePdf(filename, data);
+      return json(res, 200, {
+        ok: true,
+        standard: { filename: doc.filename, name: doc.name, chars: doc.text.length },
+        count: this.standards.count,
+      });
+    } catch (err) {
+      return json(res, 400, { ok: false, message: (err as Error).message });
+    }
+  }
+
+  private async memorySampleDoc(res: ServerResponse): Promise<boolean> {
+    const sample = `WZÓR DOKUMENTACJI MODUŁU (przykład OKO)
+
+Struktura README / opisu modułu:
+1. Tytuł i jednozdaniowy opis po polsku
+2. Po co istnieje (problem / use case)
+3. Szybki start (instalacja, uruchomienie)
+4. Konfiguracja (.env, kluczowe zmienne)
+5. API / protokół (jeśli dotyczy) — tabela endpointów
+6. Testy (npm test, smoke-test)
+7. Znane ograniczenia
+
+Styl:
+- Po polsku, zwięźle, bez marketingu
+- Przykłady kodu tylko gdy konieczne
+- Nagłówki ## w markdown
+
+Przy generowaniu nowej dokumentacji naśladuj ten układ i ton.`;
+    const entry = await this.memory.learnText(GLOBAL_MEMORY_DEVICE, sample, {
+      title: "Wzór dokumentacji modułu",
+      kind: "document",
+      source: "setup-sample",
+      force: true,
+    });
+    return json(res, 200, { ok: true, entry: { id: entry.id, title: entry.title } });
   }
 
   private async saveSkill(req: IncomingMessage, res: ServerResponse): Promise<boolean> {

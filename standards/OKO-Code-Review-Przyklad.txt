@@ -1,0 +1,31 @@
+OKO — Przykładowy standard code review (demo)
+
+Ten dokument jest przykładem normy firmowej. Zastąp go własnymi PDF-ami
+albo wgraj dodatkowe pliki w panelu /setup → Standardy kodu.
+
+1. Nazewnictwo
+   • Klasy i typy: PascalCase (np. MemoryStore)
+   • Funkcje i zmienne: camelCase
+   • Pliki TypeScript: kebab-case lub nazwa modułu
+   • Stałe: UPPER_SNAKE_CASE
+
+2. Logowanie
+   • Używaj logger("moduł") z backend/src/logger.ts
+   • Zakaz console.log w kodzie produkcyjnym backendu
+
+3. Testy
+   • Nowa logika w backend: skrypt w backend/scripts/test-*.ts
+   • Uruchomienie: npm test w katalogu backend
+
+4. Code review (PR)
+   • Opis PR po polsku: co, dlaczego, jak przetestować
+   • Diff do ~400 linii — większe zmiany dziel na mniejsze PR
+   • Sprawdź zgodność ze standardami PDF przed merge
+
+5. Dokumentacja
+   • README modułu: opis, konfiguracja, testy
+   • Wzór struktury docs — patrz pamięć globalna OKO (Wzór dokumentacji modułu)
+
+6. Android (R1)
+   • Kotlin: importy jawne, brak magic numbers w UI
+   • Nowe stringi w strings.xml, nie hardcode w MainActivity
