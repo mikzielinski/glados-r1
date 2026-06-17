@@ -57,6 +57,7 @@ class LensView @JvmOverloads constructor(
     private var ringMuted = ContextCompat.getColor(context, R.color.clinical_500)
     private var accentSoft = 0x24E2122A
     private var accentLine = 0x73E2122A
+    private var accentWarm = accentMid
 
     init {
         applyStateAnimation()
@@ -71,6 +72,7 @@ class LensView @JvmOverloads constructor(
         pulseScale: Float,
         soft: Int,
         line: Int,
+        warm: Int = mid,
     ) {
         lensShape = shape
         accentCore = core
@@ -79,6 +81,7 @@ class LensView @JvmOverloads constructor(
         ringMuted = ring
         accentSoft = soft
         accentLine = line
+        accentWarm = warm
         pulseDurationScale = pulseScale.coerceIn(0.7f, 2f)
         applyStateAnimation()
         invalidate()
@@ -123,9 +126,16 @@ class LensView @JvmOverloads constructor(
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
+        val palette = LensVol2.Palette(accentCore, accentMid, accentDark, accentWarm)
         when (lensShape) {
             LensShape.HAL_EYE -> drawHalEye(canvas)
             LensShape.TARS_MONOLITH -> drawTarsBot(canvas)
+            LensShape.ONEE -> LensVol2.drawOnee(canvas, width, height, lensState, palette, pulse, segPhase)
+            LensShape.TSUN -> LensVol2.drawTsun(canvas, width, height, lensState, palette, pulse, spin)
+            LensShape.KOHAI -> LensVol2.drawKohai(canvas, width, height, lensState, palette, pulse, spin, segPhase)
+            LensShape.KOMANDOR -> LensVol2.drawKomandor(canvas, width, height, lensState, palette, pulse, spin, segPhase)
+            LensShape.EGZ -> LensVol2.drawEgz(canvas, width, height, lensState, palette, pulse, segPhase)
+            LensShape.WIESIEK -> LensVol2.drawWiesiek(canvas, width, height, lensState, palette, pulse, segPhase)
             LensShape.CIRCLE -> drawGladosOptic(canvas)
         }
     }

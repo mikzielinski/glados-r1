@@ -21,6 +21,14 @@ R1 speaker ◀── PCM 48 kHz + status ◀────────────
 |----------|--------|------|
 | ![HAL-9000 HUD](docs/screenshots/oko-hal.png) | ![GLaDOS HUD](docs/screenshots/oko-glados.png) | ![TARS HUD](docs/screenshots/oko-tars.png) |
 
+**OKO Pakiet Person vol.2** — unikalne formy soczewki (nie tylko kolory):
+
+| On-Ē | Tsundere | Kōhai | Kapitan | Egzorcysta | Pan Wiesio |
+|------|----------|-------|---------|------------|------------|
+| ![On-Ē](design/oko/screenshots/01-v2-forms.png) | ![Tsundere](design/oko/screenshots/02-v2-forms.png) | ![Kōhai](design/oko/screenshots/03-v2-forms.png) | ![Kapitan](design/oko/screenshots/04-v2-forms.png) | ![Egzorcysta](design/oko/screenshots/05-v2-forms.png) | *(Wiesio — ta sama spec HTML)* |
+
+Specyfikacja wizualna + stany animacji: [`design/oko/skins/personas-vol2.html`](design/oko/skins/personas-vol2.html). Implementacja na R1: `LensVol2.kt` (Canvas, port CSS `.f-onee` … `.f-wiesiek`).
+
 **TARS personality sliders** (szczerość / humor / sarkazm) — słychać różnicę w szablonach i w SLM:
 
 ![Ustawienia TARS](docs/screenshots/oko-settings-tars.png)

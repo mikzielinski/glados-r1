@@ -33,6 +33,12 @@ enum class LensShape {
     CIRCLE,
     HAL_EYE,
     TARS_MONOLITH,
+    ONEE,
+    TSUN,
+    KOHAI,
+    KOMANDOR,
+    EGZ,
+    WIESIEK,
 }
 
 data class SkinTokens(
@@ -48,6 +54,8 @@ data class SkinTokens(
     val accent: Int,
     val accentSoft: Int,
     val accentLine: Int,
+    /** Tsundere warm «dere» tone; defaults to accent when null. */
+    val accentWarm: Int = accent,
 )
 
 object SkinCatalog {
@@ -98,7 +106,7 @@ object SkinCatalog {
             brandName = "On-Ē",
             logLabel = "On-Ē",
             settingsLabel = ctx.getString(R.string.skin_onee),
-            lensShape = LensShape.CIRCLE,
+            lensShape = LensShape.ONEE,
             lensCore = 0xFFF0A8B8.toInt(),
             lensMid = 0xFFE87890.toInt(),
             lensDark = 0xFF9A4058.toInt(),
@@ -112,7 +120,7 @@ object SkinCatalog {
             brandName = "Tsundere",
             logLabel = "Tsundere",
             settingsLabel = ctx.getString(R.string.skin_tsun),
-            lensShape = LensShape.CIRCLE,
+            lensShape = LensShape.TSUN,
             lensCore = 0xFF9EC8F0.toInt(),
             lensMid = 0xFF6BA0D8.toInt(),
             lensDark = 0xFF3A5880.toInt(),
@@ -121,12 +129,13 @@ object SkinCatalog {
             accent = 0xFF6BA0D8.toInt(),
             accentSoft = 0x246BA0D8,
             accentLine = 0x736BA0D8,
+            accentWarm = 0xFFE87890.toInt(),
         )
         AgentSkin.KOHAI -> SkinTokens(
             brandName = "Kōhai",
             logLabel = "Kōhai",
             settingsLabel = ctx.getString(R.string.skin_kohai),
-            lensShape = LensShape.CIRCLE,
+            lensShape = LensShape.KOHAI,
             lensCore = 0xFFFFC878.toInt(),
             lensMid = 0xFFE8A048.toInt(),
             lensDark = 0xFF986028.toInt(),
@@ -140,7 +149,7 @@ object SkinCatalog {
             brandName = "Kapitan",
             logLabel = "Kapitan",
             settingsLabel = ctx.getString(R.string.skin_komandor),
-            lensShape = LensShape.CIRCLE,
+            lensShape = LensShape.KOMANDOR,
             lensCore = 0xFFFF8858.toInt(),
             lensMid = 0xFFE85828.toInt(),
             lensDark = 0xFF983818.toInt(),
@@ -154,7 +163,7 @@ object SkinCatalog {
             brandName = "Egzorcysta",
             logLabel = "Egzorcysta",
             settingsLabel = ctx.getString(R.string.skin_egz),
-            lensShape = LensShape.CIRCLE,
+            lensShape = LensShape.EGZ,
             lensCore = 0xFF88D8A8.toInt(),
             lensMid = 0xFF58B878.toInt(),
             lensDark = 0xFF286840.toInt(),
@@ -168,7 +177,7 @@ object SkinCatalog {
             brandName = "Pan Wiesio",
             logLabel = "Wiesio",
             settingsLabel = ctx.getString(R.string.skin_wiesiek),
-            lensShape = LensShape.CIRCLE,
+            lensShape = LensShape.WIESIEK,
             lensCore = 0xFFFFE858.toInt(),
             lensMid = 0xFFE8C830.toInt(),
             lensDark = 0xFF988818.toInt(),
@@ -190,6 +199,7 @@ object SkinCatalog {
             tokens.pulseDurationScale,
             tokens.accentSoft,
             tokens.accentLine,
+            tokens.accentWarm,
         )
         binding.brandLabel.setTextColor(tokens.accent)
         binding.sysbarState.setTextColor(ColorUtils.setAlphaComponent(tokens.accent, 180))
