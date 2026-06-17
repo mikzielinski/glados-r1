@@ -212,6 +212,15 @@ export function fxPresetForSkin(skin: AgentSkinId, gladosPresetRaw: string): Voi
       return "hal";
     case "tars":
       return "tars";
+    case "onee":
+    case "tsun":
+    case "kohai":
+      return "subtle";
+    case "komandor":
+      return "hal";
+    case "egz":
+    case "wiesiek":
+      return "eq";
     default:
       return parseGladosFxPreset(gladosPresetRaw);
   }

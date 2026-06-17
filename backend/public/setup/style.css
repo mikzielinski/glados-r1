@@ -365,6 +365,8 @@ input:focus, textarea:focus {
   margin-bottom: 14px;
   color: var(--muted);
 }
+.hint.ok { color: var(--ok); }
+.hint.warn { color: var(--danger); }
 .hint code, code {
   font-family: var(--mono);
   font-size: 11px;

@@ -40,6 +40,20 @@ const CLEAR_PATTERNS = [
   "usun pamiec",
 ];
 
+const CLEAR_ALL_PATTERNS = [
+  "wyczyść całą pamięć",
+  "wyczysc cala pamiec",
+  "wyczyść wszystko",
+  "wyczysc wszystko",
+  "usuń całą pamięć",
+  "usun cala pamiec",
+  "reset pamięci",
+  "reset pamieci",
+  "clear all memory",
+  "wyczyść całą wiedzę",
+  "wyczysc cala wiedze",
+];
+
 export function parseLearnPayload(transcript: string): string | null {
   const t = transcript.trim();
   for (const re of LEARN_PREFIXES) {
@@ -65,7 +79,13 @@ export function isForceLearnQuery(transcript: string): boolean {
 
 export function isMemoryClearQuery(transcript: string): boolean {
   const t = transcript.toLowerCase();
+  if (CLEAR_ALL_PATTERNS.some((p) => t.includes(p))) return false;
   return CLEAR_PATTERNS.some((p) => t.includes(p));
+}
+
+export function isMemoryClearAllQuery(transcript: string): boolean {
+  const t = transcript.toLowerCase();
+  return CLEAR_ALL_PATTERNS.some((p) => t.includes(p));
 }
 
 export async function memoryListReply(

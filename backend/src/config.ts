@@ -75,6 +75,11 @@ export interface Config {
   memoryMaxEntryChars: number;
   memoryMaxEntries: number;
   memoryMaxUploadBytes: number;
+  ragDir: string;
+  ragEnabled: boolean;
+  ragEmbedModel: string;
+  ragChunkChars: number;
+  ragMaxRetrieveChars: number;
   templateDir: string;
   templateMaxChars: number;
   templateMaxEntryChars: number;
@@ -149,6 +154,11 @@ export function loadConfig(): Config {
     memoryMaxEntryChars: num("MEMORY_MAX_ENTRY_CHARS", 12_000),
     memoryMaxEntries: num("MEMORY_MAX_ENTRIES", 200),
     memoryMaxUploadBytes: num("MEMORY_MAX_UPLOAD_BYTES", 4 * 1024 * 1024),
+    ragDir: opt("RAG_DIR", resolve(process.cwd(), "data/rag")),
+    ragEnabled: opt("RAG_ENABLED", "true") !== "false",
+    ragEmbedModel: opt("RAG_EMBED_MODEL", "nomic-embed-text"),
+    ragChunkChars: num("RAG_CHUNK_CHARS", 900),
+    ragMaxRetrieveChars: num("RAG_MAX_RETRIEVE_CHARS", 8000),
     templateDir: opt("TEMPLATE_DIR", resolve(process.cwd(), "data/templates")),
     templateMaxChars: num("TEMPLATE_MAX_CHARS", 10_000),
     templateMaxEntryChars: num("TEMPLATE_MAX_ENTRY_CHARS", 16_000),

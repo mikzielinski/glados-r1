@@ -7,6 +7,8 @@ dist/
 backend/.integrations.json
 backend/.oko-local.json
 backend/data/memory/*.json
+backend/data/rag/
+design/oko/import-v3/
 
 # Android / Gradle
 android/.gradle/

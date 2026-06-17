@@ -14,8 +14,16 @@ import type { SkillRegistry } from "./skills.js";
 import type { StandardsRegistry } from "./standards.js";
 import type { MemoryStore } from "./memory-store.js";
 import type { DocTemplateStore } from "./doc-templates.js";
+import type { KnowledgeIndex } from "./knowledge-index.js";
+import {
+  isRagReindexQuery,
+  isRagStatusQuery,
+  ragReindexReply,
+  ragStatusReply,
+} from "./rag-router.js";
 import {
   isForceLearnQuery,
+  isMemoryClearAllQuery,
   isMemoryClearQuery,
   isMemoryListQuery,
   memoryListReply,
@@ -109,6 +117,7 @@ export class Session {
     standards?: StandardsRegistry,
     private readonly memory?: MemoryStore,
     private readonly docTemplates?: DocTemplateStore,
+    private readonly knowledgeIndex?: KnowledgeIndex,
   ) {
     this.ws = ws;
     this.inputSampleRate = cfg.inputSampleRate;
@@ -268,7 +277,7 @@ export class Session {
         await this.handleMemoryForget(msg.id);
         break;
       case "memory_clear":
-        await this.handleMemoryClear();
+        await this.handleMemoryClear(msg.scope === "all");
         break;
     }
   }
@@ -297,6 +306,7 @@ export class Session {
       const entry = await this.memory.learnText(this.memoryKey(), text, { title, force });
       this.send({ type: "memory_learned", id: entry.id, title: entry.title, count: await this.memory.count(this.memoryKey()) });
       await this.publishMemoryStatus();
+      this.knowledgeIndex?.scheduleReindex();
     } catch (err) {
       this.send({ type: "error", message: err instanceof Error ? err.message : String(err) });
     }
@@ -312,6 +322,7 @@ export class Session {
       const entry = await this.memory.ingestFile(this.memoryKey(), filename, data, force);
       this.send({ type: "memory_learned", id: entry.id, title: entry.title, count: await this.memory.count(this.memoryKey()) });
       await this.publishMemoryStatus();
+      this.knowledgeIndex?.scheduleReindex();
     } catch (err) {
       this.send({ type: "error", message: err instanceof Error ? err.message : String(err) });
     }
@@ -321,21 +332,71 @@ export class Session {
     if (!this.memory) return;
     await this.memory.forget(this.memoryKey(), entryId);
     await this.publishMemoryStatus();
+    this.knowledgeIndex?.scheduleReindex();
   }
 
-  private async handleMemoryClear(): Promise<void> {
+  private async handleMemoryClear(all = false): Promise<void> {
     if (!this.memory) return;
+    if (all) {
+      const { cleared, devices } = await this.memory.clearAll();
+      await this.publishMemoryStatus();
+      await this.syncRagAfterMemoryChange(true);
+      await this.speak(
+        cleared === 0
+          ? "Pamięć była już pusta. Indeks RAG zaktualizowany."
+          : `Wyczyszczono całą pamięć — ${cleared} wpisów z ${devices.length} profili. Indeks RAG zaktualizowany.`,
+      );
+      return;
+    }
     const n = await this.memory.clear(this.memoryKey());
     await this.publishMemoryStatus();
-    await this.speak(`Wyczyszczono pamięć. Usunięto ${n} wpisów.`);
+    await this.syncRagAfterMemoryChange(false);
+    await this.speak(`Wyczyszczono pamięć tego urządzenia. Usunięto ${n} wpisów.`);
+  }
+
+  private async syncRagAfterMemoryChange(full: boolean): Promise<void> {
+    if (!this.knowledgeIndex) return;
+    if (full) {
+      try {
+        await this.knowledgeIndex.reindex(true);
+      } catch (err) {
+        log.warn(`session ${this.id}: rag reindex after memory clear failed`, err);
+      }
+      return;
+    }
+    this.knowledgeIndex.scheduleReindex(300);
+  }
+
+  private async tryRagTurn(transcript: string): Promise<boolean> {
+    if (!this.knowledgeIndex) return false;
+
+    if (isRagStatusQuery(transcript)) {
+      const reply = await ragStatusReply(this.knowledgeIndex, this.agentSkin);
+      await this.speak(reply, transcript);
+      return true;
+    }
+
+    if (isRagReindexQuery(transcript)) {
+      this.setStatus("thinking", "rag");
+      const reply = await ragReindexReply(this.knowledgeIndex, this.agentSkin);
+      await this.speak(reply, transcript);
+      return true;
+    }
+
+    return false;
   }
 
   private async tryMemoryTurn(transcript: string): Promise<boolean> {
     if (!this.memory) return false;
     const key = this.memoryKey();
 
+    if (isMemoryClearAllQuery(transcript)) {
+      await this.handleMemoryClear(true);
+      return true;
+    }
+
     if (isMemoryClearQuery(transcript)) {
-      await this.handleMemoryClear();
+      await this.handleMemoryClear(false);
       return true;
     }
 
@@ -349,6 +410,7 @@ export class Session {
     if (learnText) {
       const entry = await this.memory.learnText(key, learnText, { force: true });
       await this.publishMemoryStatus();
+      this.knowledgeIndex?.scheduleReindex();
       await this.speak(`Zapamiętałem: ${entry.title}.`, transcript);
       return true;
     }
@@ -368,6 +430,7 @@ export class Session {
         force: true,
       });
       await this.publishMemoryStatus();
+      this.knowledgeIndex?.scheduleReindex();
       await this.speak(`Wymusiłem naukę — zapisano: ${entry.title}.`, transcript);
       return true;
     }
@@ -567,6 +630,7 @@ export class Session {
     this.lastUserTranscript = transcript.trim();
     if (!needsCloudBrain(intent)) {
       if (await this.tryTarsTraitsTurn(transcript)) return;
+      if (await this.tryRagTurn(transcript)) return;
       if (await this.tryTemplateTurn(transcript)) return;
       if (await this.tryMemoryTurn(transcript)) return;
       if (isLocationQuery(transcript)) await this.resolveLocationLabel();
@@ -586,12 +650,18 @@ export class Session {
 
     const contextHint = formatDeviceContext(this.deviceContext);
     const enriched = contextHint ? `${transcript}\n\n[Device context: ${contextHint}]` : transcript;
-    let memoryBlock = this.memory
-      ? await this.memory.getPromptBlock(this.memoryKey(), transcript)
-      : "";
-    const templatesBlock = this.docTemplates
-      ? await this.docTemplates.getPromptBlock(transcript)
-      : "";
+    let memoryBlock = "";
+    let templatesBlock = "";
+    if (this.knowledgeIndex?.isReady()) {
+      memoryBlock = await this.knowledgeIndex.getPromptBlock(this.memoryKey(), transcript);
+    } else {
+      memoryBlock = this.memory
+        ? await this.memory.getPromptBlock(this.memoryKey(), transcript)
+        : "";
+      templatesBlock = this.docTemplates
+        ? await this.docTemplates.getPromptBlock(transcript)
+        : "";
+    }
 
     if (this.cfg.webSearchEnabled && shouldPrefetchWeb(transcript, intent, memoryBlock)) {
       try {

@@ -8,6 +8,7 @@ import { SkillRegistry } from "./skills.js";
 import { MemoryStore } from "./memory-store.js";
 import { DocTemplateStore } from "./doc-templates.js";
 import { StandardsRegistry } from "./standards.js";
+import { KnowledgeIndex } from "./knowledge-index.js";
 import { WhisperStt } from "./stt.js";
 import { GladosTts } from "./tts.js";
 import { IntegrationsStore } from "./integrations-store.js";
@@ -29,12 +30,14 @@ export function startServer(cfg: Config): Server {
   void standards.refreshIfStale(0);
   const memory = new MemoryStore(cfg);
   const docTemplates = new DocTemplateStore(cfg);
+  const knowledgeIndex = new KnowledgeIndex(cfg, memory, standards, docTemplates);
+  void knowledgeIndex.load().then(() => knowledgeIndex.scheduleReindex(1500));
   void skills.getCustomTools();
   const integrations = new IntegrationsStore(cfg.integrationsFile);
   void integrations.load();
-  const setup = new SetupRoutes(cfg, integrations, memory, skills, standards, docTemplates);
+  const setup = new SetupRoutes(cfg, integrations, memory, skills, standards, docTemplates, knowledgeIndex);
   setInterval(cleanupOAuthStates, 60_000).unref();
-  const sessions = new SessionManager(cfg, stt, tts, skills, standards, memory, docTemplates);
+  const sessions = new SessionManager(cfg, stt, tts, skills, standards, memory, docTemplates, knowledgeIndex);
 
   const http = createServer(async (req, res) => {
     const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
@@ -51,6 +54,7 @@ export function startServer(cfg: Config): Server {
         brainMode: cfg.brainMode,
         standards: standards.count,
         templates: docTemplates.count,
+        rag: knowledgeIndex.getStatus(),
         memoryDir: cfg.memoryDir,
         webSearch: cfg.webSearchEnabled,
         serper: Boolean(cfg.serperApiKey),

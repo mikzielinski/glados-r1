@@ -5,6 +5,7 @@ const PAGES = {
   integrations: { title: "Integracje", sub: "GitHub, UiPath Orchestrator" },
   templates: { title: "Szablony dokumentacji", sub: "Nazwa + wzór treści docs" },
   memory: { title: "Pamięć", sub: "Fakty i notatki kontekstowe" },
+  rag: { title: "Indeks RAG", sub: "Wiedza dostępna dla agenta" },
   standards: { title: "Standardy kodu", sub: "Normy PDF dla code review" },
   skills: { title: "Skille", sub: "Webhooki lokalne i n8n" },
   settings: { title: "Ustawienia", sub: "Internet, aktywacja, linki" },
@@ -80,6 +81,7 @@ function loadPage(id) {
   if (id === "dashboard") renderDashboard();
   if (id === "templates") refreshTemplates();
   if (id === "memory") refreshMemory();
+  if (id === "rag") refreshRag();
   if (id === "standards") refreshStandards();
   if (id === "skills") refreshSkills();
   if (id === "settings") loadSettingsForm();
@@ -150,6 +152,11 @@ function renderDashboard() {
       <div class="label">Pamięć</div>
       <div class="value">${statusData.memoryGlobalCount ?? 0}</div>
       <div class="sub">faktów</div>
+    </div>
+    <div class="stat-card ${(statusData.rag || {}).ready ? "ok" : "warn"}">
+      <div class="label">RAG</div>
+      <div class="value">${ragStatusLabel(statusData.rag)}</div>
+      <div class="sub">${statusData.rag?.chunkCount ?? 0} fragmentów</div>
     </div>
     <div class="stat-card">
       <div class="label">Skille</div>
@@ -275,10 +282,142 @@ async function refreshMemory() {
   });
 }
 
+// ── RAG ─────────────────────────────────────────────────────────────
+
+function ragStatusLabel(rag) {
+  if (!rag) return "—";
+  switch (rag.status) {
+    case "ready":
+      return "✓";
+    case "indexing":
+      return "…";
+    case "stale":
+      return "!";
+    case "error":
+      return "✗";
+    default:
+      return "—";
+  }
+}
+
+function ragStatusText(rag) {
+  if (!rag) return "Brak danych";
+  const map = {
+    ready: "Gotowy — wiedza dostępna w RAG",
+    indexing: "Indeksowanie w toku…",
+    stale: "Nieaktualny — wymuś indeksowanie",
+    error: `Błąd: ${rag.lastError || "nieznany"}`,
+    empty: "Pusty — dodaj pamięć, PDF lub szablony",
+  };
+  return map[rag.status] || rag.status;
+}
+
+function ragTypeLabel(type) {
+  return type === "memory" ? "Pamięć" : type === "standard" ? "Standard PDF" : "Szablon docs";
+}
+
+async function refreshRag() {
+  const rag = await api("/api/setup/rag");
+  document.getElementById("rag-stats").innerHTML = `
+    <div class="stat-card ${rag.ready ? "ok" : rag.status === "error" ? "warn" : ""}">
+      <div class="label">Status</div>
+      <div class="value">${ragStatusLabel(rag)}</div>
+      <div class="sub">${escapeHtml(ragStatusText(rag))}</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Fragmenty</div>
+      <div class="value">${rag.chunkCount ?? 0}</div>
+      <div class="sub">chunków</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Źródła</div>
+      <div class="value">${rag.sourceCount ?? 0}</div>
+      <div class="sub">${rag.staleSources ? `${rag.staleSources} nieaktualnych` : "wszystkie zsynchronizowane"}</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Embeddings</div>
+      <div class="value">${rag.embeddings ? "✓" : "—"}</div>
+      <div class="sub">${escapeHtml(rag.embedModel || "słowne")}</div>
+    </div>`;
+
+  inline(document.getElementById("rag-status-line"), ragStatusText(rag), rag.ready ? "ok" : rag.status === "error" ? "err" : "warn");
+
+  const when = rag.lastIndexedAt ? new Date(rag.lastIndexedAt).toLocaleString("pl-PL") : "nigdy";
+  document.getElementById("rag-meta").innerHTML = `
+    <dt>Ostatnie indeksowanie</dt><dd>${escapeHtml(when)}</dd>
+    <dt>Tryb wyszukiwania</dt><dd>${rag.embeddings ? `Ollama ${escapeHtml(rag.embedModel)}` : "Słowne (bez embeddingów)"}</dd>
+    <dt>Głos</dt><dd>«status rag», «wymuś indeksowanie»</dd>`;
+
+  const srcBody = document.getElementById("rag-sources-body");
+  srcBody.innerHTML = (rag.sources || []).length
+    ? rag.sources
+        .map(
+          (s) => `<tr>
+        <td>${escapeHtml(ragTypeLabel(s.type))}</td>
+        <td><strong>${escapeHtml(s.title)}</strong>${s.deviceId ? ` <span class="muted">(${escapeHtml(s.deviceId)})</span>` : ""}</td>
+        <td>${s.chunks}</td>
+        <td>${s.chars}</td>
+        <td>${s.inRag ? '<span class="badge on">tak</span>' : '<span class="badge off">nie</span>'}</td>
+      </tr>`,
+        )
+        .join("")
+    : `<tr><td colspan="5" class="muted">Brak źródeł — dodaj pamięć, standardy lub szablony, potem wymuś indeksowanie.</td></tr>`;
+}
+
+document.getElementById("rag-reindex").addEventListener("click", async () => {
+  const btn = document.getElementById("rag-reindex");
+  btn.disabled = true;
+  inline(document.getElementById("rag-status-line"), "Indeksowanie…", "warn");
+  try {
+    const r = await api("/api/setup/rag/reindex", { method: "POST", body: JSON.stringify({ force: true }) });
+    toast(r.message || (r.ready ? "RAG gotowy" : "Indeksowanie zakończone"), r.ready ? "ok" : "info");
+    await refreshRag();
+    await refreshStatus();
+  } catch (e) {
+    toast(e.message, "err");
+    await refreshRag();
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+document.getElementById("rag-search").addEventListener("click", async () => {
+  const query = document.getElementById("rag-query").value.trim();
+  if (!query) return toast("Podaj zapytanie", "err");
+  try {
+    const r = await api("/api/setup/rag/search", { method: "POST", body: JSON.stringify({ query }) });
+    const body = document.getElementById("rag-hits-body");
+    body.innerHTML = (r.hits || []).length
+      ? r.hits
+          .map(
+            (h) => `<tr>
+          <td class="preview"><strong>${escapeHtml(h.title)}</strong><br>${escapeHtml(h.text.slice(0, 180))}…</td>
+          <td>${escapeHtml(ragTypeLabel(h.sourceType))}</td>
+          <td>${h.score}</td>
+        </tr>`,
+          )
+          .join("")
+      : `<tr><td colspan="3" class="muted">${r.ready ? "Brak trafień." : "Indeks nie jest gotowy — wymuś indeksowanie."}</td></tr>`;
+  } catch (e) {
+    toast(e.message, "err");
+  }
+});
+
 // ── Standards ───────────────────────────────────────────────────────
 
 async function refreshStandards() {
   const r = await api("/api/setup/standards");
+  const hint = document.getElementById("standards-poppler-hint");
+  if (hint) {
+    if (r.poppler) {
+      hint.textContent = "Poppler (pdftotext): zainstalowany — PDF-y są poprawnie czytane.";
+      hint.className = "hint ok";
+    } else {
+      hint.innerHTML =
+        'Brak <code>poppler</code> — zainstaluj: <code>brew install poppler</code>, potem odśwież stronę.';
+      hint.className = "hint warn";
+    }
+  }
   const body = document.getElementById("standards-body");
   body.innerHTML = (r.standards || []).length
     ? r.standards
@@ -544,15 +683,35 @@ document.getElementById("memory-file").addEventListener("change", async (ev) => 
   }
 });
 document.getElementById("memory-clear").addEventListener("click", async () => {
-  if (!confirm("Wyczyścić całą pamięć globalną?")) return;
+  if (!confirm("Wyczyścić pamięć globalną (wpisy dodane w panelu)?")) return;
   try {
     const r = await api("/api/setup/memory/clear", {
       method: "POST",
       body: JSON.stringify({ deviceId: "global" }),
     });
-    toast(`Usunięto ${r.cleared} wpisów`, "ok");
+    toast(`Usunięto ${r.cleared} wpisów globalnych`, "ok");
     await refreshMemory();
     await refreshStatus();
+    if (document.querySelector('.page[data-page="rag"].active')) await refreshRag();
+  } catch (e) {
+    toast(e.message, "err");
+  }
+});
+
+document.getElementById("memory-reset-all").addEventListener("click", async () => {
+  if (
+    !confirm(
+      "Pełny reset: usunie CAŁĄ pamięć (global + wszystkie urządzenia R1) i przebuduje indeks RAG.\n\nStandardy PDF i szablony docs NIE są usuwane.\n\nKontynuować?",
+    )
+  ) {
+    return;
+  }
+  try {
+    const r = await api("/api/setup/knowledge/reset", { method: "POST", body: "{}" });
+    toast(r.message || `Reset OK — ${r.cleared} wpisów`, "ok");
+    await refreshMemory();
+    await refreshStatus();
+    await refreshRag();
   } catch (e) {
     toast(e.message, "err");
   }

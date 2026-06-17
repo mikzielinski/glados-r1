@@ -9,7 +9,31 @@ class Prefs(context: Context) {
 
     var backendUrl: String
         get() = sp.getString("backendUrl", DEFAULT_URL) ?: DEFAULT_URL
-        set(value) = sp.edit().putString("backendUrl", value).apply()
+        set(value) = sp.edit().putString("backendUrl", value.trim()).apply()
+
+    /** Last URL that connected successfully — tried first on next reconnect. */
+    var lastWorkingBackendUrl: String?
+        get() = sp.getString("lastWorkingBackendUrl", null)
+        set(value) = sp.edit().putString("lastWorkingBackendUrl", value).apply()
+
+    /** One or more WebSocket URLs (newline or comma separated). First reachable wins. */
+    fun backendCandidates(): List<String> {
+        val parsed = backendUrl
+            .split('\n', ',')
+            .map { it.trim().trimEnd('/') }
+            .filter { it.isNotEmpty() }
+            .distinct()
+        return if (parsed.isEmpty()) listOf(DEFAULT_URL) else parsed
+    }
+
+    fun orderedBackendCandidates(): List<String> {
+        val all = backendCandidates()
+        val last = lastWorkingBackendUrl?.trim()?.trimEnd('/')
+        if (!last.isNullOrEmpty() && all.any { it.equals(last, ignoreCase = true) }) {
+            return listOf(last) + all.filterNot { it.equals(last, ignoreCase = true) }
+        }
+        return all
+    }
 
     /** Stable per-install session id so the backend can resume the agent. */
     val sessionId: String
@@ -60,7 +84,7 @@ class Prefs(context: Context) {
     }
 
     companion object {
-        // Default points at a Tailscale host; edit on-device or change here.
+        /** Default — add LAN IP as second line in SET for cable-free home WiFi. */
         const val DEFAULT_URL = "ws://glados-mac:8787/ws"
     }
 }

@@ -2,7 +2,7 @@ import { spawn } from "node:child_process";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { AgentSkinId } from "./agent-skins.js";
+import { isVol2FemaleSkin, isVol2MaleSkin, type AgentSkinId } from "./agent-skins.js";
 import { fishVoiceIdForSkin } from "./agent-skins.js";
 import { polishForSpeech } from "./spoken-polish.js";
 import type { Config } from "./config.js";
@@ -285,10 +285,17 @@ function pickProvider(
   // GLaDOS: Fish PL clone speaks Polish correctly (same fix as in our first GLaDOS voice work).
   if (skin === "glados" && cfg.fishApiKey && polish) return "fish";
 
-  // HAL / TARS: male Piper PL (darkman) + character FX — gosia sounds like default female TTS.
-  if ((skin === "hal9000" || skin === "tars") && polish && (cfg.piperModelPlMale || cfg.piperModelPl)) {
+  // HAL / TARS / vol.2 male: Piper PL darkman + character FX.
+  if (
+    (skin === "hal9000" || skin === "tars" || isVol2MaleSkin(skin)) &&
+    polish &&
+    (cfg.piperModelPlMale || cfg.piperModelPl)
+  ) {
     return "piper-pl";
   }
+
+  // Vol.2 female anime personas: Piper PL gosia + light portal FX.
+  if (isVol2FemaleSkin(skin) && polish && cfg.piperModelPl) return "piper-pl";
 
   // English on HAL/TARS can still use Fish character voice.
   if ((skin === "hal9000" || skin === "tars") && cfg.fishApiKey && !polish) return "fish";
@@ -305,7 +312,7 @@ function piperPlModelForSkin(
   skin: AgentSkinId,
   cfg: Config,
 ): { model: string; config: string } {
-  if (skin === "hal9000" || skin === "tars") {
+  if (skin === "hal9000" || skin === "tars" || isVol2MaleSkin(skin)) {
     const model = cfg.piperModelPlMale || cfg.piperModelPl;
     const config = cfg.piperConfigPlMale || cfg.piperConfigPl || model.replace(/\.onnx$/, ".onnx.json");
     log.debug(`piper-pl skin=${skin} model=${model.split("/").pop()}`);
@@ -322,6 +329,18 @@ function piperLengthScaleForSkin(skin: AgentSkinId, cfg: Config): number {
       return cfg.piperLengthScale;
     case "tars":
       return cfg.piperLengthScale;
+    case "onee":
+      return cfg.piperLengthScale * 1.12;
+    case "tsun":
+      return cfg.piperLengthScale * 1.02;
+    case "kohai":
+      return cfg.piperLengthScale * 0.92;
+    case "komandor":
+      return cfg.piperLengthScale * 0.88;
+    case "egz":
+      return cfg.piperLengthScale * 1.08;
+    case "wiesiek":
+      return cfg.piperLengthScale * 1.05;
     default:
       return cfg.piperLengthScale * 1.05;
   }

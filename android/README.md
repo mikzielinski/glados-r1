@@ -12,21 +12,30 @@ client for the backend brain.
 - **Agent skins** — HAL-9000, GLaDOS, TARS (SET → radio + TARS sliders)
 - **TARS voice config** — say *„Tars, ustaw poziom żartu na 60%”* (animated HUD overlay)
 - **Contextual memory** — learn, upload PDF/TXT, force-learn, clear (SET → Pamięć)
+- **Offline resilience** — `pause`/`reconnectNow` on lifecycle; tap status/hint to force reconnect; boot retry
+- **Memory reset** — device-only or full (all profiles + RAG sync) with confirmation dialogs in SET
 - **Streams microphone audio** (16 kHz mono PCM16) to the backend over WebSocket while you hold.
 - **Plays back** TTS audio for the active skin.
 - **Scroll wheel** (DPAD up/down) scrolls the transcript log — scrolls the `ScrollView`, not just the text field.
 - **Auto-reconnects** with backoff and **resumes** the agent across reconnects
-  (the backend hands back an `agentId`, stored in `Prefs`).
+  (the backend hands back an `agentId`, stored in `Prefs`). On disconnect the UI
+  clears busy/TTS state so PTT is not stuck after backend loss.
 
-## Configure the backend URL
+## Configure the backend URL (wireless)
 
-The default is `ws://glados-mac:8787/ws` (a Tailscale hostname). Change it by:
+No USB cable is required for daily use — only for initial APK install.
 
-- long-pressing the URL label at the bottom of the screen on-device, or
-- editing `Prefs.DEFAULT_URL` in
-  [`app/src/main/java/tech/glados/r1/Prefs.kt`](app/src/main/java/tech/glados/r1/Prefs.kt).
+In **SET**, enter **one WebSocket URL per line**. The client tries each until one connects:
 
-Use the Mac's Tailscale IP/hostname so the R1 reaches it over the tailnet.
+```
+ws://192.168.0.170:8787/ws
+ws://100.x.x.x:8787/ws
+ws://glados-mac:8787/ws
+```
+
+Run on the Mac: `./scripts/wireless-setup-info.sh` to print your LAN/Tailscale URLs.
+
+The app remembers the last working URL and prefers it on reconnect.
 
 ## Build
 
@@ -104,7 +113,8 @@ Until then: **hold the on-screen lens button** to talk.
 | File             | Responsibility                                            |
 | ---------------- | --------------------------------------------------------- |
 | `MainActivity.kt`| UI, PTT (hardware + on-screen), scroll wheel, lifecycle   |
-| `GladosClient.kt`| OkHttp WebSocket, reconnect/backoff, agent resume         |
+| `GladosClient.kt`| OkHttp WebSocket, reconnect/backoff/pause, agent resume         |
+| `BootLaunchService.kt` | Retry MainActivity launch after device boot (kiosk)      |
 | `AudioEngine.kt` | `AudioRecord` capture + streaming `AudioTrack` playback   |
 | `Protocol.kt`    | JSON control messages (mirror of backend `protocol.ts`)   |
 | `Prefs.kt`       | backend URL, stable sessionId, resumable agentId          |

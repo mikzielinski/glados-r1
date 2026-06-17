@@ -1,5 +1,6 @@
 import {
   isForceLearnQuery,
+  isMemoryClearAllQuery,
   isMemoryClearQuery,
   isMemoryListQuery,
   parseLearnPayload,
@@ -17,6 +18,9 @@ check("parse learn EN", parseLearnPayload("remember: API key is in vault") === "
 check("list query", isMemoryListQuery("co pamiętasz?") === true);
 check("force learn", isForceLearnQuery("wymuś naukę") === true);
 check("clear memory", isMemoryClearQuery("wyczyść pamięć") === true);
+check("clear all memory", isMemoryClearAllQuery("wyczyść całą pamięć") === true);
+check("clear all not device", isMemoryClearQuery("wyczyść całą pamięć") === false);
+check("reset memory", isMemoryClearAllQuery("reset pamięci") === true);
 check("unrelated", parseLearnPayload("jaka pogoda") === null);
 
 process.exit(failures === 0 ? 0 : 1);

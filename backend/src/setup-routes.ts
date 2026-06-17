@@ -27,7 +27,9 @@ import {
   upsertSkill,
 } from "./skills-file.js";
 import type { StandardsRegistry } from "./standards.js";
+import { isPopplerAvailable } from "./standards.js";
 import type { DocTemplateStore } from "./doc-templates.js";
+import type { KnowledgeIndex } from "./knowledge-index.js";
 
 const log = logger("setup");
 
@@ -66,6 +68,7 @@ export class SetupRoutes {
     private readonly skills: SkillRegistry,
     private readonly standards: StandardsRegistry,
     private readonly docTemplates: DocTemplateStore,
+    private readonly knowledgeIndex: KnowledgeIndex,
   ) {
     this.publicDir = resolve(process.cwd(), "public/setup");
     this.baseUrl = cfg.setupBaseUrl.replace(/\/$/, "");
@@ -101,6 +104,7 @@ export class SetupRoutes {
         memoryGlobalCount: mem.count,
         standardsCount: this.standards.count,
         templatesCount: this.docTemplates.count,
+        rag: this.knowledgeIndex.getStatus(),
         brainMode: this.cfg.brainMode,
         repoPath: this.cfg.repoPath,
         port: this.cfg.port,
@@ -153,6 +157,23 @@ export class SetupRoutes {
       return this.runWebSearchSkill(req, res);
     }
 
+    if (path === "/api/setup/rag" && req.method === "GET") {
+      return json(res, 200, { ok: true, ...this.knowledgeIndex.getStatus() });
+    }
+    if (path === "/api/setup/rag/reindex" && req.method === "POST") {
+      try {
+        const body = await readJson(req);
+        const status = await this.knowledgeIndex.reindex(body.force !== false);
+        return json(res, 200, { ok: true, ...status, message: status.ready ? "Indeks RAG gotowy." : "Indeksowanie zakończone." });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        return json(res, 500, { ok: false, message, ...this.knowledgeIndex.getStatus() });
+      }
+    }
+    if (path === "/api/setup/rag/search" && req.method === "POST") {
+      return this.ragSearch(req, res);
+    }
+
     if (path === "/api/setup/memory" && req.method === "GET") {
       const deviceId = url.searchParams.get("deviceId") ?? GLOBAL_MEMORY_DEVICE;
       const status = await this.memory.getStatus(deviceId);
@@ -168,23 +189,33 @@ export class SetupRoutes {
       const body = await readJson(req);
       const deviceId = String(body.deviceId ?? GLOBAL_MEMORY_DEVICE);
       const n = await this.memory.clear(deviceId);
+      this.knowledgeIndex.scheduleReindex();
       return json(res, 200, { ok: true, cleared: n, deviceId });
+    }
+    if (path === "/api/setup/memory/clear-all" && req.method === "POST") {
+      return this.memoryClearAll(res);
+    }
+    if (path === "/api/setup/knowledge/reset" && req.method === "POST") {
+      return this.knowledgeReset(res);
     }
     if (path.startsWith("/api/setup/memory/") && req.method === "DELETE") {
       const entryId = decodeURIComponent(path.slice("/api/setup/memory/".length));
       const deviceId = url.searchParams.get("deviceId") ?? GLOBAL_MEMORY_DEVICE;
       if (!entryId) return json(res, 400, { ok: false, message: "Brak id wpisu." });
       const ok = await this.memory.forget(deviceId, entryId);
+      if (ok) this.knowledgeIndex.scheduleReindex();
       return json(res, ok ? 200 : 404, { ok, deviceId });
     }
 
     if (path === "/api/setup/standards" && req.method === "GET") {
       await this.standards.refreshIfStale(0);
+      const poppler = await isPopplerAvailable();
       return json(res, 200, {
         ok: true,
         count: this.standards.count,
         standards: this.standards.list(),
         dir: resolve(this.cfg.standardsDir),
+        poppler,
       });
     }
     if (path === "/api/setup/standards/upload" && req.method === "POST") {
@@ -196,6 +227,7 @@ export class SetupRoutes {
         return json(res, 400, { ok: false, message: "Nieprawidłowa nazwa pliku." });
       }
       const ok = await this.standards.deletePdf(filename);
+      if (ok) this.knowledgeIndex.scheduleReindex();
       return json(res, ok ? 200 : 404, { ok, count: this.standards.count });
     }
     if (path === "/api/setup/memory/sample-doc" && req.method === "POST") {
@@ -213,6 +245,7 @@ export class SetupRoutes {
       const id = decodeURIComponent(path.slice("/api/setup/templates/".length));
       if (!id) return json(res, 400, { ok: false, message: "Brak id." });
       const ok = await this.docTemplates.remove(id);
+      if (ok) this.knowledgeIndex.scheduleReindex();
       return json(res, ok ? 200 : 404, { ok, count: this.docTemplates.count });
     }
     if (path === "/api/setup/templates/upload" && req.method === "POST") {
@@ -270,6 +303,51 @@ export class SetupRoutes {
     return true;
   }
 
+  private async memoryClearAll(res: ServerResponse): Promise<boolean> {
+    const { cleared, devices } = await this.memory.clearAll();
+    let rag = this.knowledgeIndex.getStatus();
+    try {
+      rag = await this.knowledgeIndex.reindex(true);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return json(res, 500, {
+        ok: false,
+        message: `Pamięć wyczyszczona (${cleared}), ale RAG nie: ${message}`,
+        cleared,
+        devices,
+        rag,
+      });
+    }
+    return json(res, 200, {
+      ok: true,
+      cleared,
+      devices,
+      rag,
+      message: `Usunięto ${cleared} wpisów. Indeks RAG: ${rag.ready ? "gotowy" : rag.status}.`,
+    });
+  }
+
+  private async knowledgeReset(res: ServerResponse): Promise<boolean> {
+    return this.memoryClearAll(res);
+  }
+
+  private async ragSearch(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
+    const body = await readJson(req);
+    const query = String(body.query ?? "").trim();
+    if (!query) return json(res, 400, { ok: false, message: "Podaj query." });
+    const deviceId = String(body.deviceId ?? GLOBAL_MEMORY_DEVICE);
+    const hits = await this.knowledgeIndex.search(query, {
+      deviceId,
+      limit: typeof body.limit === "number" ? body.limit : Number(body.limit) || 8,
+    });
+    return json(res, 200, {
+      ok: true,
+      query,
+      ready: this.knowledgeIndex.getStatus().ready,
+      hits,
+    });
+  }
+
   private async memoryLearn(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
     const body = await readJson(req);
     const text = String(body.text ?? "").trim();
@@ -279,6 +357,7 @@ export class SetupRoutes {
       title: body.title ? String(body.title) : undefined,
       force: body.force === true,
     });
+    this.knowledgeIndex.scheduleReindex();
     return json(res, 200, { ok: true, entry: { id: entry.id, title: entry.title }, deviceId });
   }
 
@@ -290,6 +369,7 @@ export class SetupRoutes {
     if (!base64) return json(res, 400, { ok: false, message: "Brak base64." });
     const data = Buffer.from(base64, "base64");
     const entry = await this.memory.ingestFile(deviceId, filename, data, body.force === true);
+    this.knowledgeIndex.scheduleReindex();
     return json(res, 200, { ok: true, entry: { id: entry.id, title: entry.title }, deviceId });
   }
 
@@ -301,6 +381,7 @@ export class SetupRoutes {
     try {
       const data = Buffer.from(base64, "base64");
       const doc = await this.standards.savePdf(filename, data);
+      this.knowledgeIndex.scheduleReindex();
       return json(res, 200, {
         ok: true,
         standard: { filename: doc.filename, name: doc.name, chars: doc.text.length },
@@ -319,6 +400,7 @@ export class SetupRoutes {
     const id = body.id ? String(body.id) : undefined;
     try {
       const entry = await this.docTemplates.upsert({ id, name, description, content });
+      this.knowledgeIndex.scheduleReindex();
       return json(res, 200, { ok: true, template: entry, count: this.docTemplates.count });
     } catch (err) {
       return json(res, 400, { ok: false, message: (err as Error).message });
@@ -334,6 +416,7 @@ export class SetupRoutes {
     try {
       const data = Buffer.from(base64, "base64");
       const entry = await this.docTemplates.ingestFile(name, filename, data);
+      this.knowledgeIndex.scheduleReindex();
       return json(res, 200, { ok: true, template: entry, count: this.docTemplates.count });
     } catch (err) {
       return json(res, 400, { ok: false, message: (err as Error).message });
@@ -357,6 +440,7 @@ export class SetupRoutes {
 Styl: zwięźle, po polsku, nagłówki ## w markdown, bez marketingu.`,
       source: "setup-sample",
     });
+    this.knowledgeIndex.scheduleReindex();
     return json(res, 200, { ok: true, template: { id: entry.id, name: entry.name } });
   }
 

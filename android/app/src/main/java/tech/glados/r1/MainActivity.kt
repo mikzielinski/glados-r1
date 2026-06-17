@@ -141,6 +141,9 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
 
         binding.settingsButton.setOnClickListener { showSettings() }
 
+        binding.status.setOnClickListener { forceReconnect() }
+        binding.hint.setOnClickListener { forceReconnect() }
+
         // Hardware keys (side button, scroll wheel) need activity focus — not the lens.
         binding.root.isFocusableInTouchMode = true
         binding.root.requestFocus()
@@ -182,8 +185,13 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
     override fun onStop() {
         super.onStop()
         forceStopTalking(getString(R.string.status_disconnected))
-        client.close()
-        audio.release()
+        if (isFinishing) {
+            client.close()
+            audio.release()
+        } else {
+            // Kiosk: pause socket but keep reconnect intent for onResume.
+            client.pause()
+        }
         if (wakeLock?.isHeld == true) wakeLock?.release()
         @Suppress("DEPRECATION")
         if (wifiLock?.isHeld == true) wifiLock?.release()
@@ -193,8 +201,22 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
     override fun onResume() {
         super.onResume()
         binding.root.requestFocus()
-        // Recover from stuck NotificationShade after keylayout remap.
         dismissSystemOverlays()
+        client.reconnectNow()
+        if (!client.isReady()) {
+            resetBackendUiState(clearReconnecting = false)
+            setStatus(getString(R.string.status_reconnecting))
+            applyUiState()
+        }
+    }
+
+    override fun onDestroy() {
+        client.close()
+        try {
+            audio.release()
+        } catch (_: Exception) {
+        }
+        super.onDestroy()
     }
 
     private fun dismissSystemOverlays() {
@@ -509,11 +531,8 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
         connected = false
         serverReady = false
         reconnecting = true
-        val msg = when {
-            ttsActive -> getString(R.string.status_resuming_speech)
-            serverBusy || backendState in BUSY_STATES -> getString(R.string.status_resuming_task)
-            else -> getString(R.string.status_reconnecting)
-        }
+        resetBackendUiState(clearReconnecting = false)
+        val msg = getString(R.string.status_reconnecting)
         if (pttActive) forceStopTalking(msg) else binding.status.text = msg
         applyUiState()
         scheduleOfflineTimer()
@@ -525,7 +544,31 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
         serverBusy = false
         reconnecting = false
         cancelOfflineTimer()
+        resetBackendUiState(clearReconnecting = true)
         forceStopTalking(getString(R.string.status_disconnected))
+    }
+
+    /** Drop stale busy/thinking UI when backend/Mac is unreachable. */
+    private fun resetBackendUiState(clearReconnecting: Boolean) {
+        if (clearReconnecting) reconnecting = false
+        backendState = null
+        backendDetail = null
+        serverBusy = false
+        ttsActive = false
+        ttsPlaybackReady = false
+        pendingTtsAudio.clear()
+        try {
+            audio.endPlayback()
+        } catch (_: Exception) {
+        }
+    }
+
+    private fun forceReconnect() {
+        resetBackendUiState(clearReconnecting = false)
+        reconnecting = true
+        setStatus(getString(R.string.status_reconnecting))
+        applyUiState()
+        client.reconnectNow()
     }
 
     override fun onEvent(event: Protocol.ServerEvent) {
@@ -677,6 +720,7 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
             }
         )
         binding.hint.text = when {
+            !connected && !client.isReady() -> getString(R.string.hint_offline)
             pttActive -> getString(R.string.ptt_listening)
             backendState == "working" -> getString(R.string.hint_busy_interrupt)
             serverBusy -> getString(R.string.hint_busy)
@@ -701,11 +745,12 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
         cancelOfflineTimer()
         offlineRunnable = Runnable {
             if (!client.isReady()) {
-                setStatus(getString(R.string.status_disconnected))
+                setStatus(getString(R.string.status_offline_hint))
                 applyUiState()
+                client.reconnectNow()
             }
         }
-        mainHandler.postDelayed(offlineRunnable!!, 12_000)
+        mainHandler.postDelayed(offlineRunnable!!, 15_000)
     }
 
     private fun cancelOfflineTimer() {
@@ -735,7 +780,15 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
         val urlInput = view.findViewById<EditText>(R.id.backendUrlInput)
         urlInput.setText(prefs.backendUrl)
 
-        val skinGroup = view.findViewById<android.widget.RadioGroup>(R.id.skinGroup)
+        val skinSpinner = view.findViewById<android.widget.Spinner>(R.id.skinSpinner)
+        val skinLabels = AgentSkin.entries.map { SkinCatalog.tokens(it, this).settingsLabel }
+        val skinAdapter = android.widget.ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            skinLabels,
+        ).also { it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
+        skinSpinner.adapter = skinAdapter
+        skinSpinner.setSelection(AgentSkin.entries.indexOf(prefs.skin).coerceAtLeast(0))
         val tarsTitle = view.findViewById<android.widget.TextView>(R.id.tarsTraitsTitle)
         val tarsPanel = view.findViewById<android.widget.LinearLayout>(R.id.tarsTraitsPanel)
         val honestySeek = view.findViewById<android.widget.SeekBar>(R.id.tarsHonestySeek)
@@ -762,26 +815,17 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
             tarsPanel.visibility = vis
         }
 
-        when (prefs.skin) {
-            AgentSkin.HAL9000 -> view.findViewById<android.widget.RadioButton>(R.id.skinHal).isChecked = true
-            AgentSkin.GLADOS -> view.findViewById<android.widget.RadioButton>(R.id.skinGlados).isChecked = true
-            AgentSkin.TARS -> view.findViewById<android.widget.RadioButton>(R.id.skinTars).isChecked = true
-        }
-        updateTarsLabels()
         showTarsPanel(prefs.skin)
 
-        skinGroup.setOnCheckedChangeListener { _, checkedId ->
-            val skin = when (checkedId) {
-                R.id.skinGlados -> AgentSkin.GLADOS
-                R.id.skinTars -> AgentSkin.TARS
-                else -> AgentSkin.HAL9000
+        skinSpinner.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: android.widget.AdapterView<*>?, v: android.view.View?, position: Int, id: Long) {
+                showTarsPanel(AgentSkin.entries[position])
             }
-            showTarsPanel(skin)
+            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
         }
 
         val updateSlider = object : android.widget.SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
-                updateTarsLabels()
+            override fun onProgressChanged(seekBar: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {        updateTarsLabels()
             }
             override fun onStartTrackingTouch(seekBar: android.widget.SeekBar?) {}
             override fun onStopTrackingTouch(seekBar: android.widget.SeekBar?) {}
@@ -822,18 +866,31 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
         }
 
         view.findViewById<android.widget.Button>(R.id.memoryClearButton).setOnClickListener {
-            client.sendText(Protocol.memoryClear())
+            AlertDialog.Builder(this)
+                .setTitle(getString(R.string.settings_memory_clear))
+                .setMessage(getString(R.string.settings_memory_clear_confirm))
+                .setPositiveButton(getString(R.string.settings_memory_clear)) { _, _ ->
+                    client.sendText(Protocol.memoryClear("device"))
+                }
+                .setNeutralButton(getString(R.string.settings_memory_clear_all)) { _, _ ->
+                    AlertDialog.Builder(this)
+                        .setTitle(getString(R.string.settings_memory_clear_all))
+                        .setMessage(getString(R.string.settings_memory_clear_all_confirm))
+                        .setPositiveButton(getString(R.string.settings_memory_clear_all)) { _, _ ->
+                            client.sendText(Protocol.memoryClear("all"))
+                        }
+                        .setNegativeButton(getString(android.R.string.cancel), null)
+                        .show()
+                }
+                .setNegativeButton(getString(android.R.string.cancel), null)
+                .show()
         }
 
         val dialog = AlertDialog.Builder(this)
             .setTitle(getString(R.string.settings_title))
             .setView(view)
             .setPositiveButton(getString(android.R.string.ok)) { _, _ ->
-                val skin = when (skinGroup.checkedRadioButtonId) {
-                    R.id.skinGlados -> AgentSkin.GLADOS
-                    R.id.skinTars -> AgentSkin.TARS
-                    else -> AgentSkin.HAL9000
-                }
+                val skin = AgentSkin.entries[skinSpinner.selectedItemPosition]
                 prefs.skinId = skin.id
                 prefs.tarsHonesty = honestySeek.progress
                 prefs.tarsHumor = humorSeek.progress

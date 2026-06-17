@@ -46,7 +46,7 @@ export type ClientMessage =
   | { type: "memory_upload"; filename: string; mime?: string; base64: string; force?: boolean }
   | { type: "memory_list" }
   | { type: "memory_forget"; id: string }
-  | { type: "memory_clear" };
+  | { type: "memory_clear"; scope?: "device" | "all" };
 
 /** Messages sent by the backend to the R1 client. */
 export type ServerMessage =

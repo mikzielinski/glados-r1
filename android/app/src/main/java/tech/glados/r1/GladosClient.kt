@@ -47,7 +47,7 @@ class GladosClient(
     private val http = OkHttpClient.Builder()
         // Disable OkHttp WS ping — it caused "no pong within 12000ms" during TTS.
         .pingInterval(0, TimeUnit.MILLISECONDS)
-        .connectTimeout(10, TimeUnit.SECONDS)
+        .connectTimeout(5, TimeUnit.SECONDS)
         .readTimeout(0, TimeUnit.MILLISECONDS)
         .retryOnConnectionFailure(true)
         .build()
@@ -58,9 +58,20 @@ class GladosClient(
     private var reconnectPending = false
     private var deathHandled = false
     private var ready = false
+    @Volatile private var paused = false
+
+    private var candidateIndex = 0
+    private var currentAttemptUrl: String? = null
+    private var candidatesExhausted = false
+
+    private fun orderedCandidates(): List<String> = prefs.orderedBackendCandidates()
 
     @Volatile var isConnected = false
         private set
+
+    /** Active backend base URL (ws://host:8787/ws). */
+    val activeBackendUrl: String?
+        get() = currentAttemptUrl ?: prefs.lastWorkingBackendUrl
 
     private val heartbeat = object : Runnable {
         override fun run() {
@@ -72,12 +83,41 @@ class GladosClient(
 
     fun connect() {
         shouldRun = true
+        paused = false
         deathHandled = false
         openSocket()
     }
 
+    /** Force immediate reconnect (e.g. Mac/backend came back on WiFi). */
+    fun reconnectNow() {
+        if (!shouldRun) {
+            connect()
+            return
+        }
+        paused = false
+        reconnectPending = false
+        backoff = 800L
+        candidateIndex = 0
+        candidatesExhausted = false
+        main.removeCallbacksAndMessages(null)
+        openSocket()
+    }
+
+    /** Pause socket while activity is stopped; keeps auto-reconnect intent. */
+    fun pause() {
+        paused = true
+        heartbeatHandler.removeCallbacks(heartbeat)
+        reconnectPending = false
+        main.removeCallbacksAndMessages(null)
+        ws?.close(1000, "paused")
+        ws = null
+        isConnected = false
+        ready = false
+    }
+
     fun close() {
         shouldRun = false
+        paused = false
         reconnectPending = false
         deathHandled = true
         heartbeatHandler.removeCallbacks(heartbeat)
@@ -91,30 +131,45 @@ class GladosClient(
     }
 
     private fun openSocket() {
-        if (!shouldRun) return
+        if (!shouldRun || paused) return
         ws?.close(1000, "reconnecting")
         ws = null
         isConnected = false
         ready = false
         deathHandled = false
 
-        val base = prefs.backendUrl.trimEnd('/')
+        val candidates = orderedCandidates()
+        if (candidates.isEmpty()) return
+        if (candidateIndex >= candidates.size) {
+            candidateIndex = 0
+            candidatesExhausted = true
+        }
+        val base = candidates[candidateIndex].trimEnd('/')
+        currentAttemptUrl = base
         val agent = prefs.agentId
         val url = buildString {
             append(base)
             append("?sessionId=").append(prefs.sessionId)
             if (agent != null) append("&agentId=").append(agent)
         }
-        Log.i(TAG, "connecting to $url")
+        Log.i(TAG, "connecting (${candidateIndex + 1}/${candidates.size}) to $url")
         ws = http.newWebSocket(Request.Builder().url(url).build(), socketListener)
     }
 
     private fun scheduleReconnect() {
-        if (!shouldRun || reconnectPending) return
+        if (!shouldRun || paused || reconnectPending) return
         reconnectPending = true
-        val delay = backoff
-        backoff = (backoff * 2).coerceAtMost(MAX_BACKOFF_MS)
-        Log.i(TAG, "reconnecting in ${delay}ms")
+        val candidates = orderedCandidates()
+        val tryNext = candidates.size > 1 && !candidatesExhausted
+        if (tryNext) {
+            candidateIndex = (candidateIndex + 1) % candidates.size
+            if (candidateIndex == 0) candidatesExhausted = true
+        }
+        val delay = if (tryNext && candidateIndex != 0) 400L else backoff
+        if (!tryNext || candidateIndex == 0) {
+            backoff = (backoff * 2).coerceAtMost(MAX_BACKOFF_MS)
+        }
+        Log.i(TAG, "reconnecting in ${delay}ms (url index $candidateIndex)")
         main.postDelayed({
             reconnectPending = false
             if (shouldRun) openSocket()
@@ -129,7 +184,7 @@ class GladosClient(
         isConnected = false
         ready = false
         Log.w(TAG, "socket death: $reason")
-        if (shouldRun) {
+        if (shouldRun && !paused) {
             main.post { listener.onReconnecting() }
             scheduleReconnect()
         } else {
@@ -164,8 +219,11 @@ class GladosClient(
     private val socketListener = object : WebSocketListener() {
         override fun onOpen(webSocket: WebSocket, response: Response) {
             backoff = 800L
+            candidateIndex = 0
+            candidatesExhausted = false
             deathHandled = false
             isConnected = true
+            currentAttemptUrl?.let { prefs.lastWorkingBackendUrl = it }
             webSocket.send(Protocol.hello(
                 "rabbit-r1",
                 prefs.sessionId,

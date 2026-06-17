@@ -2,11 +2,13 @@
  * Skin-specific copy — HAL / GLaDOS / TARS personas for fast-path replies and SLM prompts.
  */
 
-import type { AgentSkinId } from "./agent-skins.js";
+import { isVol2Skin, type AgentSkinId } from "./agent-skins.js";
 import type { TarsTraits } from "./tars-traits.js";
 import { tarsBatteryReply, tarsChatInstructions, tarsFewShots, tarsJokeReply, tarsPersonalityDescription } from "./tars-traits.js";
+import * as vol2 from "./skin-vol2-replies.js";
 
 export function codeInstructionsForSkin(skin: AgentSkinId, traits?: TarsTraits): string {
+  if (isVol2Skin(skin)) return vol2.vol2CodeInstructions(skin);
   const shared =
     "Tryb: CODE REVIEW + INŻYNIERIA w REPO_PATH.\n" +
     "• STANDARDY KODU (PDF) — normy obowiązkowe przy review i refaktorze; cytuj konkretne reguły.\n" +
@@ -51,6 +53,7 @@ ${scope}`;
 }
 
 export function fewShotForSkin(skin: AgentSkinId, traits?: TarsTraits): string {
+  if (isVol2Skin(skin)) return vol2.vol2FewShot(skin);
   if (skin === "tars" && traits) return tarsFewShots(traits);
   switch (skin) {
     case "hal9000":
@@ -119,6 +122,7 @@ GLaDOS: Rośliny zamieniają światło w cukier. Ty zamieniasz kofeinę w kod �
 }
 
 export function assistantLabel(skin: AgentSkinId): string {
+  if (isVol2Skin(skin)) return vol2.vol2AssistantLabel(skin);
   switch (skin) {
     case "hal9000":
       return "HAL";
@@ -142,6 +146,7 @@ export function fishPolishHint(skin: AgentSkinId): string {
 }
 
 export function whoAmIReply(skin: AgentSkinId): string {
+  if (isVol2Skin(skin)) return vol2.vol2WhoAmI(skin);
   switch (skin) {
     case "hal9000":
       return "Jestem HAL 9000 — spokojny, precyzyjny system z czerwonej soczewki. Obserwuję ten Rabbit i pomagam, kiedy prosisz.";
@@ -154,6 +159,7 @@ export function whoAmIReply(skin: AgentSkinId): string {
 
 /** Longer self-description when user asks about personality / backstory. */
 export function personalityReply(skin: AgentSkinId, traits?: TarsTraits): string {
+  if (isVol2Skin(skin)) return vol2.vol2Personality(skin);
   switch (skin) {
     case "hal9000":
       return "Jestem HAL 9000 — uruchomiony w Urbana, Illinois. Mówię spokojnie, wolno i z precyzją. Obserwuję, analizuję i rzadko się spieszę. Lubię długie pauzy… i krótkie, konkretne wnioski.";
@@ -167,6 +173,7 @@ export function personalityReply(skin: AgentSkinId, traits?: TarsTraits): string
 }
 
 export function greetingReply(skin: AgentSkinId): string {
+  if (isVol2Skin(skin)) return vol2.vol2Greeting(skin);
   switch (skin) {
     case "hal9000":
       return "Witaj. Słucham. Co mogę dla ciebie zrobić?";
@@ -178,6 +185,7 @@ export function greetingReply(skin: AgentSkinId): string {
 }
 
 export function batteryReply(skin: AgentSkinId, pct: number, traits?: TarsTraits): string {
+  if (isVol2Skin(skin)) return vol2.vol2Battery(skin, pct);
   switch (skin) {
     case "hal9000":
       return `Masz ${pct} procent baterii. Wystarczy na dalszą pracę. Jestem pewien.`;
@@ -190,6 +198,7 @@ export function batteryReply(skin: AgentSkinId, pct: number, traits?: TarsTraits
 }
 
 export function batteryUnknownReply(skin: AgentSkinId): string {
+  if (isVol2Skin(skin)) return vol2.vol2BatteryUnknown(skin);
   switch (skin) {
     case "hal9000":
       return "Nie widzę poziomu baterii. To… niepokojące.";
@@ -245,6 +254,7 @@ export function weatherReply(skin: AgentSkinId): string {
 }
 
 export function thanksReply(skin: AgentSkinId): string {
+  if (isVol2Skin(skin)) return vol2.vol2Thanks(skin);
   switch (skin) {
     case "hal9000":
       return "Proszę bardzo. Kontynuujmy.";
@@ -256,6 +266,7 @@ export function thanksReply(skin: AgentSkinId): string {
 }
 
 export function goodbyeReply(skin: AgentSkinId): string {
+  if (isVol2Skin(skin)) return vol2.vol2Goodbye(skin);
   switch (skin) {
     case "hal9000":
       return "Do widzenia. Będę tu… obserwował.";
@@ -267,6 +278,7 @@ export function goodbyeReply(skin: AgentSkinId): string {
 }
 
 export function jokeReply(skin: AgentSkinId, traits?: TarsTraits): string {
+  if (isVol2Skin(skin)) return vol2.vol2Joke(skin);
   switch (skin) {
     case "hal9000":
       return "Powiedziałbym żart, ale obawiam się, że nie zrozumiesz go tak, jak ja.";
@@ -278,6 +290,7 @@ export function jokeReply(skin: AgentSkinId, traits?: TarsTraits): string {
 }
 
 export function howAreYouReply(skin: AgentSkinId): string {
+  if (isVol2Skin(skin)) return vol2.vol2HowAreYou(skin);
   switch (skin) {
     case "hal9000":
       return "Funkcjonuję optymalnie. A ty?";

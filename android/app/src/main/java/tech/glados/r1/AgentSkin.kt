@@ -12,7 +12,13 @@ import tech.glados.r1.ui.LensView
 enum class AgentSkin(val id: String) {
     HAL9000("hal9000"),
     GLADOS("glados"),
-    TARS("tars");
+    TARS("tars"),
+    ONEE("onee"),
+    TSUN("tsun"),
+    KOHAI("kohai"),
+    KOMANDOR("komandor"),
+    EGZ("egz"),
+    WIESIEK("wiesiek");
 
     companion object {
         fun fromId(id: String?): AgentSkin =
@@ -87,6 +93,90 @@ object SkinCatalog {
             accent = 0xFF5A9BB8.toInt(),
             accentSoft = 0x245A9BB8,
             accentLine = 0x735A9BB8,
+        )
+        AgentSkin.ONEE -> SkinTokens(
+            brandName = "On-Ē",
+            logLabel = "On-Ē",
+            settingsLabel = ctx.getString(R.string.skin_onee),
+            lensShape = LensShape.CIRCLE,
+            lensCore = 0xFFF0A8B8.toInt(),
+            lensMid = 0xFFE87890.toInt(),
+            lensDark = 0xFF9A4058.toInt(),
+            ringColor = ContextCompat.getColor(ctx, R.color.clinical_300),
+            pulseDurationScale = 1.35f,
+            accent = 0xFFE87890.toInt(),
+            accentSoft = 0x24E87890,
+            accentLine = 0x73E87890,
+        )
+        AgentSkin.TSUN -> SkinTokens(
+            brandName = "Tsundere",
+            logLabel = "Tsundere",
+            settingsLabel = ctx.getString(R.string.skin_tsun),
+            lensShape = LensShape.CIRCLE,
+            lensCore = 0xFF9EC8F0.toInt(),
+            lensMid = 0xFF6BA0D8.toInt(),
+            lensDark = 0xFF3A5880.toInt(),
+            ringColor = ContextCompat.getColor(ctx, R.color.clinical_500),
+            pulseDurationScale = 1.05f,
+            accent = 0xFF6BA0D8.toInt(),
+            accentSoft = 0x246BA0D8,
+            accentLine = 0x736BA0D8,
+        )
+        AgentSkin.KOHAI -> SkinTokens(
+            brandName = "Kōhai",
+            logLabel = "Kōhai",
+            settingsLabel = ctx.getString(R.string.skin_kohai),
+            lensShape = LensShape.CIRCLE,
+            lensCore = 0xFFFFC878.toInt(),
+            lensMid = 0xFFE8A048.toInt(),
+            lensDark = 0xFF986028.toInt(),
+            ringColor = ContextCompat.getColor(ctx, R.color.clinical_300),
+            pulseDurationScale = 0.82f,
+            accent = 0xFFE8A048.toInt(),
+            accentSoft = 0x24E8A048,
+            accentLine = 0x73E8A048,
+        )
+        AgentSkin.KOMANDOR -> SkinTokens(
+            brandName = "Kapitan",
+            logLabel = "Kapitan",
+            settingsLabel = ctx.getString(R.string.skin_komandor),
+            lensShape = LensShape.CIRCLE,
+            lensCore = 0xFFFF8858.toInt(),
+            lensMid = 0xFFE85828.toInt(),
+            lensDark = 0xFF983818.toInt(),
+            ringColor = ContextCompat.getColor(ctx, R.color.clinical_700),
+            pulseDurationScale = 0.78f,
+            accent = 0xFFE85828.toInt(),
+            accentSoft = 0x24E85828,
+            accentLine = 0x73E85828,
+        )
+        AgentSkin.EGZ -> SkinTokens(
+            brandName = "Egzorcysta",
+            logLabel = "Egzorcysta",
+            settingsLabel = ctx.getString(R.string.skin_egz),
+            lensShape = LensShape.CIRCLE,
+            lensCore = 0xFF88D8A8.toInt(),
+            lensMid = 0xFF58B878.toInt(),
+            lensDark = 0xFF286840.toInt(),
+            ringColor = ContextCompat.getColor(ctx, R.color.panel_700),
+            pulseDurationScale = 1.25f,
+            accent = 0xFF58B878.toInt(),
+            accentSoft = 0x2458B878,
+            accentLine = 0x7358B878,
+        )
+        AgentSkin.WIESIEK -> SkinTokens(
+            brandName = "Pan Wiesio",
+            logLabel = "Wiesio",
+            settingsLabel = ctx.getString(R.string.skin_wiesiek),
+            lensShape = LensShape.CIRCLE,
+            lensCore = 0xFFFFE858.toInt(),
+            lensMid = 0xFFE8C830.toInt(),
+            lensDark = 0xFF988818.toInt(),
+            ringColor = ContextCompat.getColor(ctx, R.color.clinical_500),
+            pulseDurationScale = 1.18f,
+            accent = 0xFFE8C830.toInt(),
+            accentSoft = 0x24E8C830,
+            accentLine = 0x73E8C830,
         )
     }
 

@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { join } from "node:path";
 import type { Config } from "./config.js";
@@ -132,6 +132,22 @@ export class MemoryStore {
     file.entries = [];
     await this.save(file);
     return n;
+  }
+
+  async listDeviceIds(): Promise<string[]> {
+    await mkdir(this.cfg.memoryDir, { recursive: true });
+    const files = await readdir(this.cfg.memoryDir);
+    return files.filter((f) => f.endsWith(".json")).map((f) => f.replace(/\.json$/, ""));
+  }
+
+  /** Wipe every memory bucket (global + per-device). */
+  async clearAll(): Promise<{ cleared: number; devices: string[] }> {
+    const ids = await this.listDeviceIds();
+    let cleared = 0;
+    for (const id of ids) {
+      cleared += await this.clear(id);
+    }
+    return { cleared, devices: ids };
   }
 
   statusEntries(entries: MemoryEntry[]): MemoryStatusEntry[] {

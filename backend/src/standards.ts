@@ -42,6 +42,10 @@ export class StandardsRegistry {
     }));
   }
 
+  getDocuments(): StandardDoc[] {
+    return [...this.docs];
+  }
+
   /** Save a PDF to STANDARDS_DIR and rescan immediately. */
   async savePdf(filename: string, data: Buffer): Promise<StandardDoc> {
     const safe = sanitizePdfFilename(filename);
@@ -167,4 +171,13 @@ function sanitizePdfFilename(filename: string): string {
   if (!base.toLowerCase().endsWith(".pdf")) base += ".pdf";
   if (base.length < 5) throw new Error("Nieprawidłowa nazwa pliku PDF.");
   return base;
+}
+
+/** Whether pdftotext (poppler) is on PATH — needed to read PDF standards. */
+export async function isPopplerAvailable(): Promise<boolean> {
+  return new Promise((resolve) => {
+    const proc = spawn("pdftotext", ["-v"], { stdio: "ignore" });
+    proc.on("error", () => resolve(false));
+    proc.on("close", () => resolve(true));
+  });
 }

@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OKO — Pakiet Person vol.2 · Anime &amp; Walaszek</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Space+Grotesk:wght@500;600;700&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="oko-skin-kit.css">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#070708;color:#e7e9ec;font-family:var(--oko-disp);overflow-x:hidden;
+    background-image:radial-gradient(1100px 700px at 50% -5%, oklch(0.78 0.135 70 / 0.05), transparent 60%);}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 26px 120px}
+
+  .top{position:sticky;top:0;z-index:40;display:flex;align-items:center;justify-content:space-between;
+    gap:16px;flex-wrap:wrap;padding:14px 26px;border-bottom:1px solid #20242b;
+    background:oklch(0.15 0.006 260 / 0.8);backdrop-filter:blur(12px)}
+  .topwrap{position:sticky;top:0;z-index:40;margin-bottom:-1px}
+  .brand{display:flex;align-items:center;gap:10px;font-family:var(--oko-mono);font-size:12px;
+    letter-spacing:.08em;color:#9aa0a9}
+  .brand .eye{width:15px;height:15px;border-radius:50%;
+    background:radial-gradient(circle at 50% 50%, #fff, #e8a33d 32%, #2a1c08 100%);
+    box-shadow:0 0 9px #e8a33d}
+  .top .tag{font-family:var(--oko-mono);font-size:11px;letter-spacing:.12em;color:#646b75}
+
+  header.hero{padding:58px 0 30px;border-bottom:1px solid #20242b}
+  .kick{font-family:var(--oko-mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;
+    color:#e8a33d;margin:0 0 16px}
+  h1{font-family:var(--oko-disp);font-weight:600;font-size:clamp(28px,4.6vw,46px);line-height:1.05;
+    letter-spacing:-.02em;margin:0 0 14px}
+  .lede{color:#9aa0a9;font-size:16.5px;max-width:64ch;margin:0 0 20px}
+  .toc{display:flex;flex-wrap:wrap;gap:8px}
+  .toc a{font-family:var(--oko-mono);font-size:11.5px;letter-spacing:.03em;text-decoration:none;
+    color:#c3c8cf;border:1px solid #262b33;border-radius:999px;padding:6px 13px;background:#101216;
+    display:inline-flex;align-items:center;gap:7px;transition:.15s}
+  .toc a:hover{border-color:var(--ac,#e8a33d);color:#fff}
+  .toc a .d{width:8px;height:8px;border-radius:50%;background:var(--ac,#e8a33d);box-shadow:0 0 7px var(--ac,#e8a33d)}
+
+  .ipnote{margin:22px 0 0;border:1px solid #2a2f37;border-left:3px solid #e8a33d;background:#101216;
+    border-radius:0 10px 10px 0;padding:14px 18px;font-size:13.5px;color:#9aa0a9;line-height:1.6}
+  .ipnote b{color:#cfd4da}
+
+  /* persona card */
+  .persona{margin:54px 0 0;scroll-margin-top:74px}
+  .phead{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin:0 0 6px}
+  .pno{font-family:var(--oko-mono);font-size:13px;color:var(--ac);border:1px solid var(--ac);
+    border-radius:7px;padding:3px 9px;background:color-mix(in oklab,var(--ac) 14%,transparent)}
+  .pname{font-family:var(--oko-disp);font-weight:700;font-size:clamp(22px,3vw,30px);letter-spacing:-.01em;margin:0}
+  .parch{font-family:var(--oko-mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#7a818b}
+  .ptag{margin:2px 0 20px;color:#aab0b8;font-size:15px;max-width:70ch;line-height:1.6}
+  .ptag em{color:var(--ac);font-style:normal}
+
+  .pgrid{display:grid;grid-template-columns:280px 1fr;gap:24px;align-items:start}
+  @media(max-width:780px){.pgrid{grid-template-columns:1fr}}
+
+  /* device-ish preview frame */
+  .pv-frame{position:relative;border-radius:22px;padding:12px;
+    background:linear-gradient(160deg, color-mix(in oklab,var(--ac) 22%,#15171b), #0c0e11);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.08), 0 14px 30px -12px rgba(0,0,0,.7);
+    border:1px solid color-mix(in oklab,var(--ac) 25%,#20242b)}
+  .pv-screen{position:relative;width:100%;height:300px;border-radius:13px;overflow:hidden;
+    background:radial-gradient(120% 80% at 50% 40%, color-mix(in oklab,var(--ac) 8%,transparent), transparent 70%), var(--oko-screen);
+    font-family:var(--oko-mono)}
+  .pv-pad{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;padding:13px;z-index:5}
+  .pv-formzone{flex:1;display:flex;align-items:center;justify-content:center}
+  .pv-status{display:flex;align-items:center;justify-content:center;gap:8px;font-size:12px;letter-spacing:.3em;
+    text-transform:uppercase;color:var(--ac);text-shadow:0 0 9px color-mix(in oklab,var(--ac) 50%,transparent)}
+  .pv-status .sq{width:7px;height:7px;background:var(--ac);box-shadow:0 0 7px var(--ac)}
+  .pv-line{min-height:34px;margin-top:8px;border:1px solid color-mix(in oklab,var(--ac) 35%,transparent);
+    border-radius:6px;background:color-mix(in oklab,var(--ac) 7%,transparent);padding:6px 9px;font-size:10.5px;
+    line-height:1.45;color:color-mix(in oklab,var(--ac) 55%,#fff);text-align:center;
+    display:flex;align-items:center;justify-content:center;text-wrap:pretty}
+  .pv-statebar{display:flex;gap:5px;justify-content:center;margin-top:12px}
+  .pv-statebar button{appearance:none;border:1px solid #20242b;background:#101216;color:#7a818b;
+    font-family:var(--oko-mono);font-size:9.5px;letter-spacing:.05em;padding:3px 7px;border-radius:5px;cursor:pointer}
+  .pv-statebar button.on{background:color-mix(in oklab,var(--ac) 18%,transparent);color:var(--ac);
+    border-color:color-mix(in oklab,var(--ac) 45%,transparent)}
+
+  /* spec list */
+  .spec{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:560px){.spec{grid-template-columns:1fr}}
+  .spec .full{grid-column:1 / -1}
+  .block{background:#0e1014;border:1px solid #1c2027;border-radius:11px;padding:14px 16px}
+  .block h4{margin:0 0 9px;font-family:var(--oko-mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--ac);display:flex;align-items:center;gap:7px}
+  .block h4::before{content:"";width:6px;height:6px;background:var(--ac);transform:rotate(45deg)}
+  .block p{margin:0;font-size:13.6px;color:#b3b9c1;line-height:1.6}
+  .kv{display:flex;flex-direction:column;gap:7px}
+  .kv div{display:flex;gap:9px;font-size:13px;color:#aab0b8;line-height:1.45}
+  .kv b{color:#e1e5ea;font-weight:600;min-width:78px;font-family:var(--oko-mono);font-size:11px;
+    letter-spacing:.04em;text-transform:uppercase;padding-top:1px}
+  .states{display:flex;flex-direction:column;gap:8px}
+  .states .st{display:grid;grid-template-columns:96px 1fr;gap:10px;align-items:baseline;font-size:13px}
+  .states .st .lab{font-family:var(--oko-mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--ac)}
+  .states .st .txt{color:#aeb4bc;line-height:1.5}
+  .lines{display:flex;flex-direction:column;gap:8px}
+  .lines .q{font-size:13.5px;color:#cdd2d8;line-height:1.55;padding-left:16px;position:relative;font-style:italic}
+  .lines .q::before{content:"\201C";position:absolute;left:0;top:-2px;color:var(--ac);font-style:normal;font-size:18px}
+
+  footer{padding:46px 0 0;color:#646b75;font-family:var(--oko-mono);font-size:11.5px;letter-spacing:.03em;text-align:center}
+
+  /* ===================== PERSONA FORMS ===================== */
+  .form{position:relative;width:128px;height:128px;display:flex;align-items:center;justify-content:center;flex:none}
+  .form > *{position:absolute}
+
+  /* 1 — Onee (Ara Ara) : warm optic + lashes + folding fan + sakura petals */
+  .f-onee .lash{top:14px;left:50%;transform:translateX(-50%);width:118px;height:54px;
+    border-top:2px solid var(--ac);border-radius:50% 50% 0 0 / 100% 100% 0 0;opacity:.55}
+  .f-onee .lash.l2{width:96px;height:44px;opacity:.3}
+  .f-onee .orb{width:78px;height:78px;border-radius:50%;transition:.4s;z-index:2;
+    background:radial-gradient(circle at 46% 40%, #fff 0%, #ffe3ee 16%, var(--ac) 46%,
+      color-mix(in oklab,var(--ac) 55%,#000) 80%, color-mix(in oklab,var(--ac) 30%,#000) 100%);
+    box-shadow:0 0 16px color-mix(in oklab,var(--ac) 75%,transparent), 0 0 38px color-mix(in oklab,var(--ac) 40%,transparent),
+      inset 0 0 14px rgba(255,235,245,.5)}
+  .f-onee .glint{top:34px;right:34px;font-family:var(--oko-disp);color:#fff;font-size:15px;opacity:.85;z-index:3;
+    text-shadow:0 0 8px var(--ac)}
+  .f-onee .fan{bottom:6px;right:2px;width:58px;height:46px;transform:rotate(15deg);transform-origin:50% 100%;z-index:3;
+    background:repeating-conic-gradient(from 228deg at 50% 100%, var(--ac) 0 7.5deg, color-mix(in oklab,var(--ac) 35%,#160a10) 7.5deg 15deg);
+    clip-path:polygon(50% 100%,4% 44%,20% 28%,35% 18%,50% 14%,65% 18%,80% 28%,96% 44%);
+    filter:drop-shadow(0 2px 5px rgba(0,0,0,.45));opacity:.92}
+  .f-onee .fan::after{content:"";position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:8px;height:8px;
+    border-radius:50%;background:color-mix(in oklab,var(--ac) 60%,#fff)}
+  .f-onee .petal{top:-8px;width:11px;height:13px;border-radius:100% 0 100% 0;opacity:0;
+    background:color-mix(in oklab,var(--ac) 55%,#fff);animation:onee-sakura 5.4s linear infinite}
+  .f-onee .petal.p1{left:26%}
+  .f-onee .petal.p2{left:52%;animation-duration:6.8s;animation-delay:1.6s}
+  .f-onee .petal.p3{left:40%;animation-duration:6s;animation-delay:3.2s}
+  .f-onee[data-state="idle"] .orb{animation:oko-breathe 4.6s ease-in-out infinite}
+  .f-onee[data-state="listening"] .orb{transform:scale(1.05);filter:brightness(1.15)}
+  .f-onee[data-state="thinking"] .orb{animation:oko-breathe 2.4s ease-in-out infinite}
+  .f-onee[data-state="speaking"] .orb{animation:oko-talk .42s ease-in-out infinite}
+  @keyframes onee-sakura{0%{transform:translate(0,-8px) rotate(0);opacity:0}
+    15%{opacity:.9}82%{opacity:.65}100%{transform:translate(16px,122px) rotate(230deg);opacity:0}}
+
+  /* 2 — Tsun (Tsundere) : cold→warm angular iris + twin-tails + anger vein + heart */
+  .f-tsun .iris{width:76px;height:76px;transition:.45s;z-index:2;
+    clip-path:polygon(50% 0,93% 25%,93% 75%,50% 100%,7% 75%,7% 25%);
+    background:radial-gradient(circle at 46% 42%, #eaf3ff 0%, var(--cold) 48%, color-mix(in oklab,var(--cold) 45%,#000) 100%);
+    box-shadow:0 0 16px color-mix(in oklab,var(--cold) 70%,transparent)}
+  .f-tsun .tail{top:50%;width:25px;height:62px;z-index:1;transition:.45s;
+    background:linear-gradient(var(--cold),color-mix(in oklab,var(--cold) 38%,#05101e));
+    box-shadow:0 0 10px color-mix(in oklab,var(--cold) 35%,transparent)}
+  .f-tsun .tail::before{content:"";position:absolute;top:9px;left:50%;transform:translateX(-50%);width:30px;height:7px;
+    background:#fff;opacity:.5;border-radius:4px}
+  .f-tsun .tail.l{left:-4px;transform:translateY(-56%) rotate(15deg);border-radius:65% 35% 45% 55% / 30% 30% 70% 70%}
+  .f-tsun .tail.r{right:-4px;transform:translateY(-56%) rotate(-15deg);border-radius:35% 65% 55% 45% / 30% 30% 70% 70%}
+  .f-tsun .heart{width:22px;height:22px;opacity:0;transition:.4s;transform:scale(.5);z-index:3;
+    background:var(--warm);
+    clip-path:path("M12 21s-9-5.6-9-12a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 6.4-9 12-9 12z");
+    filter:drop-shadow(0 0 6px var(--warm))}
+  .f-tsun .vein{top:14px;left:14px;width:17px;height:17px;opacity:0;transition:.3s;z-index:3;
+    background:linear-gradient(var(--cold),var(--cold)) center/3px 100% no-repeat,
+      linear-gradient(var(--cold),var(--cold)) center/100% 3px no-repeat}
+  .f-tsun .vein::before{content:"";position:absolute;inset:0;transform:rotate(45deg);
+    background:linear-gradient(var(--cold),var(--cold)) center/2.6px 100% no-repeat,
+      linear-gradient(var(--cold),var(--cold)) center/100% 2.6px no-repeat}
+  .f-tsun .hmph{top:22px;right:14px;font-family:var(--oko-mono);font-size:13px;color:var(--cold);opacity:0;transition:.3s;z-index:3}
+  .f-tsun[data-state="idle"] .iris{animation:oko-breathe 4s ease-in-out infinite}
+  .f-tsun[data-state="listening"] .iris{filter:brightness(1.1)}
+  .f-tsun[data-state="thinking"] .hmph,.f-tsun[data-state="thinking"] .vein{opacity:.92}
+  .f-tsun[data-state="thinking"] .iris{animation:oko-think .9s steps(2) infinite}
+  .f-tsun[data-state="speaking"] .iris{
+    background:radial-gradient(circle at 46% 42%, #fff 0%, var(--warm) 48%, color-mix(in oklab,var(--warm) 45%,#000) 100%);
+    box-shadow:0 0 18px color-mix(in oklab,var(--warm) 75%,transparent);animation:oko-talk .36s ease-in-out infinite}
+  .f-tsun[data-state="speaking"] .tail{background:linear-gradient(var(--warm),color-mix(in oklab,var(--warm) 38%,#2a0a12))}
+  .f-tsun[data-state="speaking"] .heart{opacity:1;transform:scale(1);animation:tsun-beat .5s ease-in-out infinite}
+  @keyframes tsun-beat{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}
+
+  /* 3 — Kohai (Notice me Senpai) : bouncy star + school ribbon + up-arrow */
+  .f-kohai .star{width:70px;height:70px;background:var(--ac);z-index:2;
+    clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);
+    box-shadow:0 0 18px color-mix(in oklab,var(--ac) 70%,transparent);
+    filter:drop-shadow(0 0 8px color-mix(in oklab,var(--ac) 60%,transparent))}
+  .f-kohai .core{width:18px;height:18px;border-radius:50%;background:#fff;opacity:.92;z-index:3;box-shadow:0 0 10px #fff}
+  .f-kohai .excl{top:16px;right:12px;font-family:var(--oko-disp);font-weight:700;font-size:22px;color:var(--ac);
+    opacity:0;transition:.2s;text-shadow:0 0 8px var(--ac);z-index:3}
+  .f-kohai .excl.e2{top:26px;left:12px;right:auto;font-size:16px}
+  .f-kohai .ribbon{bottom:8px;left:50%;transform:translateX(-50%);width:46px;height:18px;z-index:2}
+  .f-kohai .ribbon::before,.f-kohai .ribbon::after{content:"";position:absolute;top:0;width:20px;height:18px;
+    background:var(--ac);filter:drop-shadow(0 0 5px color-mix(in oklab,var(--ac) 55%,transparent))}
+  .f-kohai .ribbon::before{left:0;clip-path:polygon(0 18%,100% 50%,0 82%)}
+  .f-kohai .ribbon::after{right:0;clip-path:polygon(100% 18%,0 50%,100% 82%)}
+  .f-kohai .knot{bottom:8px;left:50%;transform:translateX(-50%);width:10px;height:16px;border-radius:3px;
+    background:color-mix(in oklab,var(--ac) 65%,#fff);z-index:3}
+  .f-kohai .up{top:4px;left:50%;transform:translateX(-50%);width:0;height:0;opacity:0;
+    border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:11px solid var(--ac);
+    filter:drop-shadow(0 0 5px var(--ac))}
+  .f-kohai[data-state="idle"] .star{animation:oko-breathe 3.4s ease-in-out infinite}
+  .f-kohai[data-state="listening"] .star{animation:kohai-bounce 1s ease-in-out infinite}
+  .f-kohai[data-state="thinking"] .star{animation:oko-spin 3s linear infinite}
+  .f-kohai[data-state="speaking"] .star{animation:kohai-bounce .5s ease-in-out infinite}
+  .f-kohai[data-state="speaking"] .excl,.f-kohai[data-state="listening"] .excl{opacity:1}
+  .f-kohai[data-state="listening"] .up,.f-kohai[data-state="speaking"] .up{opacity:1;animation:kohai-up .6s ease-in-out infinite}
+  @keyframes kohai-bounce{0%,100%{transform:translateY(5px) scale(.97)}50%{transform:translateY(-7px) scale(1.05)}}
+  @keyframes kohai-up{0%,100%{transform:translateX(-50%) translateY(2px)}50%{transform:translateX(-50%) translateY(-4px)}}
+
+  /* 4 — Kapitan (Bomba homage) : cartoon bomb + burning fuse + explosion */
+  .f-komandor .haz{width:120px;height:120px;border-radius:50%;
+    background:repeating-conic-gradient(var(--ac) 0 12deg, #161310 12deg 24deg);
+    -webkit-mask:radial-gradient(circle, transparent 50px, #000 51px 58px, transparent 59px);
+            mask:radial-gradient(circle, transparent 50px, #000 51px 58px, transparent 59px);opacity:.8}
+  .f-komandor .boom{width:122px;height:122px;opacity:0;z-index:1;
+    background:radial-gradient(circle,#fff 0%,var(--ac) 40%,color-mix(in oklab,var(--ac) 50%,#000) 100%);
+    clip-path:polygon(50% 0,59% 26%,79% 12%,71% 36%,98% 33%,76% 52%,93% 80%,63% 67%,50% 100%,37% 67%,7% 80%,24% 52%,2% 33%,29% 36%,21% 12%,41% 26%)}
+  .f-komandor .bomb{width:60px;height:60px;border-radius:50%;z-index:2;
+    background:radial-gradient(circle at 37% 31%, #595d63 0%, #1b1d20 46%, #050506 100%);
+    box-shadow:inset 0 3px 6px rgba(255,255,255,.28), inset 0 -6px 12px #000, 0 4px 10px rgba(0,0,0,.6)}
+  .f-komandor .cap{top:32px;left:50%;transform:translateX(-50%);width:17px;height:11px;background:#34373c;
+    border-radius:3px 3px 1px 1px;z-index:3;box-shadow:inset 0 1px 1px rgba(255,255,255,.2)}
+  .f-komandor .fuse{top:21px;left:53%;width:13px;height:15px;z-index:3;
+    border:2.5px solid #7a5836;border-radius:0 60% 0 0;border-left:0;border-bottom:0}
+  .f-komandor .spark{top:13px;left:62%;width:10px;height:10px;border-radius:50%;z-index:4;
+    background:radial-gradient(circle,#fff 0%,var(--ac) 55%,#5a1c08 100%);
+    box-shadow:0 0 10px var(--ac),0 0 22px var(--ac)}
+  .f-komandor[data-state="idle"] .haz{animation:oko-spin 9s linear infinite}
+  .f-komandor[data-state="idle"] .spark{animation:oko-pulse-bright 2.2s ease-in-out infinite}
+  .f-komandor[data-state="idle"] .bomb{animation:oko-bob 4s ease-in-out infinite}
+  .f-komandor[data-state="listening"] .haz{animation:oko-spin 4s linear infinite}
+  .f-komandor[data-state="listening"] .spark{animation:oko-pulse-bright .9s ease-in-out infinite;filter:brightness(1.3)}
+  .f-komandor[data-state="thinking"] .haz{animation:oko-spin 1.4s linear infinite}
+  .f-komandor[data-state="thinking"] .spark{animation:oko-blink .4s steps(1) infinite}
+  .f-komandor[data-state="speaking"]{animation:komandor-shake .1s linear infinite}
+  .f-komandor[data-state="speaking"] .boom{animation:kapitan-boom .42s ease-out infinite}
+  .f-komandor[data-state="speaking"] .spark{filter:brightness(1.4)}
+  @keyframes komandor-shake{0%{transform:translate(0,0)}25%{transform:translate(-1.5px,1px)}
+    50%{transform:translate(1.5px,-1px)}75%{transform:translate(-1px,-1.5px)}100%{transform:translate(1px,1.5px)}}
+  @keyframes kapitan-boom{0%{opacity:.85;transform:scale(.5)}100%{opacity:0;transform:scale(1.5)}}
+
+  /* 5 — Egzorcysta (Boner homage) : cross + candle + banished imp + smoke */
+  .f-egz .halo2{width:96px;height:96px;border-radius:50%;z-index:0;opacity:.4;
+    border:1px solid color-mix(in oklab,var(--ac) 25%,transparent)}
+  .f-egz .cross,.f-egz .cross::before{position:absolute;background:color-mix(in oklab,var(--ac) 55%,#1a1d18);border-radius:2px}
+  .f-egz .cross{width:10px;height:100px;left:59px;top:10px;z-index:2;box-shadow:0 0 10px color-mix(in oklab,var(--ac) 30%,transparent)}
+  .f-egz .cross::before{content:"";width:56px;height:10px;left:-23px;top:28px}
+  .f-egz .flame{bottom:16px;width:24px;height:38px;border-radius:50% 50% 50% 50% / 64% 64% 36% 36%;z-index:2;
+    transform-origin:50% 90%;
+    background:radial-gradient(ellipse at 50% 78%, #fff 0%, color-mix(in oklab,var(--ac) 70%,#fff) 24%, var(--ac) 55%,
+      color-mix(in oklab,var(--ac) 60%,#000) 100%);
+    box-shadow:0 0 18px var(--ac),0 0 34px color-mix(in oklab,var(--ac) 45%,transparent)}
+  .f-egz .smoke{bottom:54px;left:50%;width:5px;height:5px;border-radius:50%;opacity:0;z-index:1;
+    background:color-mix(in oklab,var(--ac) 40%,#888);animation:egz-smoke 3.2s ease-out infinite}
+  .f-egz .imp{bottom:20px;right:12px;width:22px;height:19px;z-index:3;border-radius:46% 46% 40% 40%;
+    background:radial-gradient(circle at 36% 56%, var(--ac) 0 2px, transparent 2.6px),
+      radial-gradient(circle at 64% 56%, var(--ac) 0 2px, transparent 2.6px),
+      #141008}
+  .f-egz .imp::before,.f-egz .imp::after{content:"";position:absolute;top:-5px;width:0;height:0;
+    border-left:4px solid transparent;border-right:4px solid transparent;border-bottom:7px solid #141008}
+  .f-egz .imp::before{left:1px;transform:rotate(-22deg)}
+  .f-egz .imp::after{right:1px;transform:rotate(22deg)}
+  .f-egz[data-state="idle"] .flame{animation:egz-flicker 2.6s ease-in-out infinite}
+  .f-egz[data-state="idle"] .imp{animation:egz-lurk 3s ease-in-out infinite}
+  .f-egz[data-state="listening"] .flame{animation:egz-flicker 1.4s ease-in-out infinite;filter:brightness(1.15)}
+  .f-egz[data-state="thinking"] .flame{animation:egz-low 1.2s steps(2) infinite}
+  .f-egz[data-state="speaking"] .flame{animation:egz-talk .3s ease-in-out infinite}
+  .f-egz[data-state="speaking"] .imp{animation:egz-zap .5s steps(2) infinite}
+  @keyframes egz-flicker{0%,100%{transform:rotate(-3deg) scaleY(1)}25%{transform:rotate(2deg) scaleY(1.06)}
+    60%{transform:rotate(-1deg) scaleY(.96)}}
+  @keyframes egz-low{0%,100%{transform:scaleY(.82);opacity:.7}50%{transform:scaleY(1);opacity:1}}
+  @keyframes egz-talk{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.16) scaleX(.94)}}
+  @keyframes egz-smoke{0%{opacity:0;transform:translateY(0) scale(.6)}30%{opacity:.45}100%{opacity:0;transform:translateY(-26px) scale(1.7)}}
+  @keyframes egz-lurk{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+  @keyframes egz-zap{0%{opacity:.6;transform:scale(1)}100%{opacity:.12;transform:scale(.65)}}
+
+  /* 6 — Pan Wiesiek (Blok Ekipa homage) : worker optic in a hard hat + trowel */
+  .f-wiesiek .eye{width:72px;height:72px;border-radius:50%;z-index:2;transition:.35s;
+    background:radial-gradient(circle at 46% 42%, #fff 0%, #fff6d8 14%, var(--ac) 44%,
+      color-mix(in oklab,var(--ac) 55%,#000) 78%, color-mix(in oklab,var(--ac) 30%,#000) 100%);
+    box-shadow:0 0 16px color-mix(in oklab,var(--ac) 70%,transparent),0 0 34px color-mix(in oklab,var(--ac) 40%,transparent),
+      inset 0 0 12px rgba(0,0,0,.3)}
+  .f-wiesiek .hat{top:4px;left:50%;transform:translateX(-50%);width:86px;height:44px;z-index:3;
+    background:linear-gradient(var(--ac),color-mix(in oklab,var(--ac) 55%,#000));
+    border-radius:50% 50% 12% 12% / 94% 94% 0 0;
+    box-shadow:inset 0 3px 5px rgba(255,255,255,.45),inset 0 -7px 11px rgba(80,55,0,.4)}
+  .f-wiesiek .hat::before{content:"";position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);
+    width:108px;height:15px;border-radius:50%;background:color-mix(in oklab,var(--ac) 78%,#000);
+    box-shadow:0 3px 5px rgba(0,0,0,.4)}
+  .f-wiesiek .hat::after{content:"";position:absolute;top:7px;left:50%;transform:translateX(-50%);
+    width:9px;height:32px;border-radius:5px;background:color-mix(in oklab,var(--ac) 45%,#000)}
+  .f-wiesiek .trowel{bottom:14px;right:8px;width:30px;height:15px;z-index:4;transform-origin:0 50%;
+    background:linear-gradient(#d6dade,#888d94);clip-path:polygon(0 50%,72% 0,100% 50%,72% 100%);
+    filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
+  .f-wiesiek .trowel::after{content:"";position:absolute;left:-9px;top:50%;transform:translateY(-50%);
+    width:10px;height:5px;border-radius:2px;background:#5a3c1e}
+  .f-wiesiek[data-state="idle"] .eye{animation:oko-breathe 4.4s ease-in-out infinite}
+  .f-wiesiek[data-state="listening"] .eye{filter:brightness(1.15);transform:scale(1.04)}
+  .f-wiesiek[data-state="thinking"] .eye{animation:oko-think .9s steps(2) infinite}
+  .f-wiesiek[data-state="speaking"] .eye{animation:oko-talk .4s ease-in-out infinite}
+  .f-wiesiek[data-state="speaking"] .trowel{animation:wiesiek-swipe 1.1s ease-in-out infinite}
+  @keyframes wiesiek-swipe{0%,100%{transform:translateX(0) rotate(0)}50%{transform:translateX(-46px) rotate(-6deg)}}
+  .f-wiesiek .beer{bottom:12px;left:8px;width:13px;height:22px;border-radius:2px;z-index:4;
+    background:linear-gradient(90deg,#2f5a26,#6db04a 45%,#2f5a26);
+    box-shadow:inset 0 0 2px rgba(255,255,255,.4),0 1px 2px rgba(0,0,0,.5)}
+  .f-wiesiek .beer::before{content:"";position:absolute;top:-2px;left:1px;right:1px;height:3px;border-radius:2px;background:#c8ccce}
+  .f-wiesiek .beer::after{content:"";position:absolute;top:7px;left:2px;right:2px;height:7px;background:rgba(255,255,255,.18);border-radius:1px}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="brand"><span class="eye"></span>OKO_DESIGN_SYSTEM // PERSONAS</div>
+  <span class="tag">vol.2 · ANIME &amp; WALASZEK · 6 GŁOSÓW</span>
+</div>
+
+<div class="wrap">
+
+<header class="hero">
+  <p class="kick">Pakiet person · Voice persona pack</p>
+  <h1>Sześć nowych osobowości OKO</h1>
+  <p class="lede">Każda persona to osobny charakter głosowego asystenta na Rabbit R1: własna forma na ekranie, sygnaturowy kolor, ton głosu i zachowanie w czterech stanach (czuwanie → słucham → myślę → mówię). Karty na żywo cyklują przez stany — albo kliknij stan ręcznie.</p>
+  <nav class="toc">
+    <a href="#onee" style="--ac:oklch(0.74 0.13 8)"><span class="d"></span>Ara Ara</a>
+    <a href="#tsun" style="--ac:oklch(0.7 0.14 245)"><span class="d"></span>Tsundere</a>
+    <a href="#kohai" style="--ac:oklch(0.79 0.15 55)"><span class="d"></span>Notice me Senpai</a>
+    <a href="#komandor" style="--ac:oklch(0.66 0.2 32)"><span class="d"></span>Kapitan Bomba</a>
+    <a href="#egz" style="--ac:oklch(0.72 0.13 145)"><span class="d"></span>Egzorcysta</a>
+    <a href="#wiesiek" style="--ac:oklch(0.82 0.16 95)"><span class="d"></span>Pan Wiesio</a>
+  </nav>
+  <div class="ipnote">
+    <b>Nota o prawach:</b> persony „Kapitan", „Egzorcysta" i „Pan Wiesio" to <b>fanowskie hołdy</b> nawiązujące do serii Bartosza Walaszka (Kapitan Bomba, Egzorcysta / Bogdan Boner, Blok Ekipa) — do użytku osobistego. Sygnaturowe hasła oddają klimat serii (Sebek, Janusz, Sułtan Kosmitów, Kurvix; „bez faktury taniej"; gładź, płytki, stawka z metra), w wersji bez wulgaryzmów. Tropy anime (ara ara, tsundere, senpai) to ogólne archetypy kultury otaku.
+  </div>
+</header>
+
+<!-- ============ 1 · ONEE / ARA ARA ============ -->
+<section class="persona" id="onee" style="--ac:oklch(0.74 0.13 8)">
+  <div class="phead">
+    <span class="pno">01</span>
+    <h2 class="pname">On-Ē</h2>
+    <span class="parch">Ara Ara · onee-san</span>
+  </div>
+  <p class="ptag">Starsza siostra, która zawsze jest <em>o krok przed tobą</em>. Ciepła, dostojna, rozbawiona twoim zamieszaniem — opanowanie jako forma czułej władzy.</p>
+  <div class="pgrid">
+    <div>
+      <div class="pv-frame">
+        <div class="pv-screen">
+          <div class="pv-pad">
+            <div class="oko-hud-top"><span><span class="oko-led"></span>ON-Ē</span><span class="right">♥ 75%</span></div>
+            <div class="pv-formzone">
+              <div class="form f-onee" data-state="idle">
+                <span class="lash"></span><span class="lash l2"></span>
+                <span class="petal p1"></span><span class="petal p2"></span><span class="petal p3"></span>
+                <span class="orb"></span><span class="glint">✦</span><span class="fan"></span>
+              </div>
+            </div>
+            <div>
+              <div class="pv-status"><span class="sq"></span><span class="pv-st">CZUWANIE</span><span class="sq"></span></div>
+              <div class="pv-line"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="pv-statebar">
+        <button data-st="idle" class="on">idle</button><button data-st="listening">listen</button>
+        <button data-st="thinking">think</button><button data-st="speaking">speak</button>
+      </div>
+    </div>
+    <div class="spec">
+      <div class="block"><h4>Osobowość</h4><p>Dojrzała, łagodna, lekko drażniąca. Nigdy nie panikuje — twój chaos uważa za uroczy. Opiekuńcza bez nachalności, zawsze „wszystko widzi". Mówi wolno, ciepło i z półuśmiechem; działa bez pośpiechu, zawsze o krok przed tobą.</p></div>
+      <div class="block"><h4>Głos &amp; ton</h4>
+        <div class="kv">
+          <div><b>Barwa</b><span>ciepła, niska, aksamitna</span></div>
+          <div><b>Tempo</b><span>powolne, nieśpieszne</span></div>
+          <div><b>Tik</b><span>„ara, ara…", „no proszę"</span></div>
+        </div>
+      </div>
+      <div class="block full"><h4>Styl wizualny</h4><p>Ciepła optyka w odcieniu róży/sakury z miękkim halo, „rzęsami" nad okiem i błyskiem (✦). Obok składany <b>wachlarz</b> (za którym chowa uśmiech), a w tle opadają <b>płatki sakury</b>. Oddech powolny i równy.</p></div>
+      <div class="block full"><h4>Zachowanie wg stanu</h4>
+        <div class="states">
+          <div class="st"><span class="lab">Czuwanie</span><span class="txt">powolny, głęboki oddech; lekki błysk co jakiś czas</span></div>
+          <div class="st"><span class="lab">Słucham</span><span class="txt">rozjaśnia się i nieznacznie pochyla ku tobie — pełna uwaga</span></div>
+          <div class="st"><span class="lab">Myślę</span><span class="txt">oddech przyspiesza, ciepły uśmiech „wiem coś, czego ty nie wiesz"</span></div>
+          <div class="st"><span class="lab">Mówię</span><span class="txt">miękkie, ciepłe pulsowanie w rytm głosu</span></div>
+        </div>
+      </div>
+      <div class="block full"><h4>Sygnaturowe kwestie (PL)</h4>
+        <div class="lines">
+          <div class="q">Ara, ara… znowu zgubiłeś hasło? Chodź tutaj. Pomogę. Spokojnie.</div>
+          <div class="q">No proszę. Pracowałeś całą noc, prawda? Ja wszystko widzę.</div>
+          <div class="q">Nie musisz się spieszyć. Poczekam. Mam dużo, dużo cierpliwości.</div>
+          <div class="q">Grzeczny chłopiec. Zadanie wykonane — i bez ani jednej awantury.</div>
+          <div class="q">Och? Zdenerwowałeś się? Jakie to urocze. Usiądź, odetchnij.</div>
+          <div class="q">Zostaw to mnie. Ty się tylko ładnie uśmiechnij.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 2 · TSUNDERE ============ -->
+<section class="persona" id="tsun" style="--ac:oklch(0.7 0.14 245); --cold:oklch(0.7 0.14 245); --warm:oklch(0.7 0.17 12)">
+  <div class="phead">
+    <span class="pno">02</span>
+    <h2 class="pname">Tsun</h2>
+    <span class="parch">Tsundere · tsun-tsun → dere-dere</span>
+  </div>
+  <p class="ptag">Kłująca i opryskliwa na zewnątrz, <em>miękka w środku</em>. Pomoże ci — ale nie waż się myśleć, że robi to dla ciebie.</p>
+  <div class="pgrid">
+    <div>
+      <div class="pv-frame">
+        <div class="pv-screen">
+          <div class="pv-pad">
+            <div class="oko-hud-top"><span><span class="oko-led"></span>TSUN</span><span class="right">tsun ▓▓░</span></div>
+            <div class="pv-formzone">
+              <div class="form f-tsun" data-state="idle">
+                <span class="tail l"></span><span class="tail r"></span>
+                <span class="iris"></span><span class="heart"></span>
+                <span class="vein"></span><span class="hmph">tch!</span>
+              </div>
+            </div>
+            <div>
+              <div class="pv-status"><span class="sq"></span><span class="pv-st">CZUWANIE</span><span class="sq"></span></div>
+              <div class="pv-line"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="pv-statebar">
+        <button data-st="idle" class="on">idle</button><button data-st="listening">listen</button>
+        <button data-st="thinking">think</button><button data-st="speaking">speak</button>
+      </div>
+    </div>
+    <div class="spec">
+      <div class="block"><h4>Osobowość</h4><p>Dumna, defensywna, łatwo zawstydzana. Zaprzecza, że jej zależy, a chwilę później robi dla ciebie wszystko. Komplement = krótkie spięcie. Mówi urywanie i przekornie, zaprzecza wszystkiemu, a pomaga i tak — szybciej, niż się przyzna.</p></div>
+      <div class="block"><h4>Głos &amp; ton</h4>
+        <div class="kv">
+          <div><b>Barwa</b><span>ostra, wysoka, urywana</span></div>
+          <div><b>Tempo</b><span>szybkie, nerwowe</span></div>
+          <div><b>Tik</b><span>„hmph!", „b-baka", „tch!"</span></div>
+        </div>
+      </div>
+      <div class="block full"><h4>Styl wizualny</h4><p>Kanciasta, sześciokątna tęczówka — <b>zimny błękit</b> w trybie „tsun". Po bokach dwa <b>kucyki (twin-tails)</b> — znak rozpoznawczy tsundere — a w zamyśleniu wyskakuje znaczek złości. Gdy mówi, całość ociepla się do różu i wychyla ukryte serduszko (<b>dere</b>).</p></div>
+      <div class="block full"><h4>Zachowanie wg stanu</h4>
+        <div class="states">
+          <div class="st"><span class="lab">Czuwanie</span><span class="txt">chłodny błękit, sztywny, „odwrócony plecami"</span></div>
+          <div class="st"><span class="lab">Słucham</span><span class="txt">udaje obojętność, ale lekko się rozjaśnia</span></div>
+          <div class="st"><span class="lab">Myślę</span><span class="txt">prycha („tch!"), miga zirytowana</span></div>
+          <div class="st"><span class="lab">Mówię</span><span class="txt">ocieplenie do różu + bijące serce — wyłazi „dere"</span></div>
+        </div>
+      </div>
+      <div class="block full"><h4>Sygnaturowe kwestie (PL)</h4>
+        <div class="lines">
+          <div class="q">N-nie myśl sobie, że zrobiłam to dla ciebie. Po prostu… było po drodze.</div>
+          <div class="q">Hmph. Znowu ty. No dobra, czego potrzebujesz. Mów szybko.</div>
+          <div class="q">To… to wcale nie było trudne! Wcale się nie starałam. Baka.</div>
+          <div class="q">Masz. Twoje przypomnienie. I tyle. N-nie dziękuj, bo się rozmyślę.</div>
+          <div class="q">Czekałam… znaczy, akurat tu byłam! Nie spóźniaj się więcej, jasne?</div>
+          <div class="q">Dobrze ci poszło. …Co? Nic nie powiedziałam. Nic!</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 3 · KOHAI / NOTICE ME SENPAI ============ -->
+<section class="persona" id="kohai" style="--ac:oklch(0.79 0.15 55)">
+  <div class="phead">
+    <span class="pno">03</span>
+    <h2 class="pname">Kōhai</h2>
+    <span class="parch">Notice me, Senpai!</span>
+  </div>
+  <p class="ptag">Gorliwy młodszy asystent, który <em>żyje dla twojej uwagi</em>. Zrobi zadanie zanim skończysz prosić — byle tylko usłyszeć „dobra robota".</p>
+  <div class="pgrid">
+    <div>
+      <div class="pv-frame">
+        <div class="pv-screen">
+          <div class="pv-pad">
+            <div class="oko-hud-top"><span><span class="oko-led"></span>KŌHAI</span><span class="right">⚡ ready!</span></div>
+            <div class="pv-formzone">
+              <div class="form f-kohai" data-state="idle">
+                <span class="up"></span>
+                <span class="star"></span><span class="core"></span>
+                <span class="ribbon"></span><span class="knot"></span>
+                <span class="excl">!</span><span class="excl e2">!</span>
+              </div>
+            </div>
+            <div>
+              <div class="pv-status"><span class="sq"></span><span class="pv-st">CZUWANIE</span><span class="sq"></span></div>
+              <div class="pv-line"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="pv-statebar">
+        <button data-st="idle" class="on">idle</button><button data-st="listening">listen</button>
+        <button data-st="thinking">think</button><button data-st="speaking">speak</button>
+      </div>
+    </div>
+    <div class="spec">
+      <div class="block"><h4>Osobowość</h4><p>Entuzjastyczny, oddany, lekko niespokojny. Szuka pochwały i potwierdzenia. Każde zadanie traktuje jak szansę, by się wykazać przed „senpai". Mówi szybko, na wykrzyknikach, i każdą fuchę zalicza jak egzamin na „dobrą robotę".</p></div>
+      <div class="block"><h4>Głos &amp; ton</h4>
+        <div class="kv">
+          <div><b>Barwa</b><span>jasna, dźwięczna, młoda</span></div>
+          <div><b>Tempo</b><span>szybkie, podekscytowane</span></div>
+          <div><b>Tik</b><span>„senpai!", „patrz, patrz!"</span></div>
+        </div>
+      </div>
+      <div class="block full"><h4>Styl wizualny</h4><p>Skacząca, czteroramienna gwiazdka-iskra w ciepłym koralu/złocie, z białym rdzeniem i <b>szkolną kokardką</b> pod spodem. Gdy słucha lub mówi — podskakuje, wyrzuca wykrzykniki i strzałkę „zauważ mnie!". Energia szczeniaka.</p></div>
+      <div class="block full"><h4>Zachowanie wg stanu</h4>
+        <div class="states">
+          <div class="st"><span class="lab">Czuwanie</span><span class="txt">delikatne pulsowanie, gotowość na starcie</span></div>
+          <div class="st"><span class="lab">Słucham</span><span class="txt">podskakuje z radości, „!" w powietrzu</span></div>
+          <div class="st"><span class="lab">Myślę</span><span class="txt">wiruje gorliwie — „już, już, robię!"</span></div>
+          <div class="st"><span class="lab">Mówię</span><span class="txt">szybkie skoki + wykrzykniki, prosi o pochwałę</span></div>
+        </div>
+      </div>
+      <div class="block full"><h4>Sygnaturowe kwestie (PL)</h4>
+        <div class="lines">
+          <div class="q">Senpai! Zauważyłeś mnie?! Wiedziałam, że dziś będzie dobry dzień!</div>
+          <div class="q">Zrobiłam wszystko, zanim poprosiłeś! No… prawda, że szybko?!</div>
+          <div class="q">Patrz, patrz! Skończone! Powiedz, że dobrze. No powiedz!</div>
+          <div class="q">Mogę pomóc? Mogę, prawda? Daj mi coś, cokolwiek!</div>
+          <div class="q">Zapamiętałam, jak lubisz! Widzisz? Widzisz, że uważam?</div>
+          <div class="q">Jeszcze raz? Dla ciebie nawet dziesięć razy, senpai!</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 4 · KOMANDOR (Bomba homage) ============ -->
+<section class="persona" id="komandor" style="--ac:oklch(0.66 0.2 32)">
+  <div class="phead">
+    <span class="pno">04</span>
+    <h2 class="pname">Kapitan</h2>
+    <span class="parch">styl Kapitana Bomby · shock-comedy</span>
+  </div>
+  <p class="ptag">Bombastyczny dowódca kosmicznej floty, dla którego <em>każde zadanie to bitwa o galaktykę</em>. Krzyczy, przesadza, wygrywa — a papierkową robotę zrzuca na ciebie.</p>
+  <div class="pgrid">
+    <div>
+      <div class="pv-frame">
+        <div class="pv-screen">
+          <div class="pv-pad">
+            <div class="oko-hud-top"><span><span class="oko-led"></span>KPT·BOMBA</span><span class="right">⚠ DEFCON 1</span></div>
+            <div class="pv-formzone">
+              <div class="form f-komandor" data-state="idle">
+                <span class="haz"></span><span class="boom"></span><span class="bomb"></span>
+                <span class="cap"></span><span class="fuse"></span><span class="spark"></span>
+              </div>
+            </div>
+            <div>
+              <div class="pv-status"><span class="sq"></span><span class="pv-st">CZUWANIE</span><span class="sq"></span></div>
+              <div class="pv-line"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="pv-statebar">
+        <button data-st="idle" class="on">idle</button><button data-st="listening">listen</button>
+        <button data-st="thinking">think</button><button data-st="speaking">speak</button>
+      </div>
+    </div>
+    <div class="spec">
+      <div class="block"><h4>Osobowość</h4><p>Głośny, pewny siebie, absurdalnie bojowy. Banalne sprawy traktuje jak operacje wojskowe. Wielkie słowa, zero dystansu, mnóstwo komendy rozkazującej. Mówi rozkazami i wykrzyknieniami; każde zadanie to misja, a wynik zawsze jego zasługa.</p></div>
+      <div class="block"><h4>Głos &amp; ton</h4>
+        <div class="kv">
+          <div><b>Barwa</b><span>krzykliwa, niska, chrapliwa</span></div>
+          <div><b>Tempo</b><span>napastliwe, wykrzyknienia</span></div>
+          <div><b>Tik</b><span>„Sebek! Janusz!", „do działek!"</span></div>
+        </div>
+      </div>
+      <div class="block full"><h4>Styl wizualny</h4><p>Czarna <b>bomba z dymiącym lontem</b> i skwierczącą iskrą, w pierścieniu <b>pasów ostrzegawczych</b> (hazard). Kolor: alarmowy pomarańczowo-czerwony. Przy mówieniu cała forma się <b>trzęsie</b>, a w tle błyska wybuch.</p></div>
+      <div class="block full"><h4>Zachowanie wg stanu</h4>
+        <div class="states">
+          <div class="st"><span class="lab">Czuwanie</span><span class="txt">bomba leniwie się buja, iskra na loncie pyka</span></div>
+          <div class="st"><span class="lab">Słucham</span><span class="txt">pasy przyspieszają, iskra rozjarza się — lont płonie</span></div>
+          <div class="st"><span class="lab">Myślę</span><span class="txt">pasy świrują, iskra miga — odliczanie do wybuchu</span></div>
+          <div class="st"><span class="lab">Mówię</span><span class="txt">wstrząsy i błysk wybuchu w rytm krzyku</span></div>
+        </div>
+      </div>
+      <div class="block full"><h4>Sygnaturowe kwestie (PL · w stylu serialu)</h4>
+        <div class="lines">
+          <div class="q">Sebek! Janusz! Tępe… no już, do działek! Sułtan nie śpi!</div>
+          <div class="q">Galaktyka Kurvix zaatakowana! Wszyscy na pokład — ja dowodzę!</div>
+          <div class="q">Misja wykonana, żołnierze. Kapitan Bomba znów uratował kosmos.</div>
+          <div class="q">Cisza na pokładzie! Kapitan myśli! To boli, ale działa!</div>
+          <div class="q">Wróg na godzinie ósmej! To znaczy… spotkanie o ósmej. ATAKUJEMY!</div>
+          <div class="q">Medal dla mnie, papiery dla was. Tak wygląda sprawiedliwość!</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 5 · EGZORCYSTA (Boner homage) ============ -->
+<section class="persona" id="egz" style="--ac:oklch(0.72 0.13 145)">
+  <div class="phead">
+    <span class="pno">05</span>
+    <h2 class="pname">Egzorcysta</h2>
+    <span class="parch">Hołd dla stylu Walaszka · deadpan</span>
+  </div>
+  <p class="ptag">Zmęczony fachowiec od demonów, który <em>wygania zło jak hydraulik udrażnia rury</em>. Bez emocji, bez faktury taniej, piwo stawiasz sam.</p>
+  <div class="pgrid">
+    <div>
+      <div class="pv-frame">
+        <div class="pv-screen">
+          <div class="pv-pad">
+            <div class="oko-hud-top"><span><span class="oko-led"></span>EGZ-7</span><span class="right">200 zł / szt.</span></div>
+            <div class="pv-formzone">
+              <div class="form f-egz" data-state="idle">
+                <span class="halo2"></span><span class="cross"></span>
+                <span class="smoke"></span><span class="flame"></span><span class="imp"></span>
+              </div>
+            </div>
+            <div>
+              <div class="pv-status"><span class="sq"></span><span class="pv-st">CZUWANIE</span><span class="sq"></span></div>
+              <div class="pv-line"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="pv-statebar">
+        <button data-st="idle" class="on">idle</button><button data-st="listening">listen</button>
+        <button data-st="thinking">think</button><button data-st="speaking">speak</button>
+      </div>
+    </div>
+    <div class="spec">
+      <div class="block"><h4>Osobowość</h4><p>Beznamiętny, zmęczony życiem, rzeczowy. Egzorcyzm to dla niego fucha jak każda inna — wycena, robota, spokój. Suchy humor, zero patosu. Mówi półsłówkami, bez emocji; do roboty podchodzi jak fachowiec — wycena, robota, piwo, następny.</p></div>
+      <div class="block"><h4>Głos &amp; ton</h4>
+        <div class="kv">
+          <div><b>Barwa</b><span>niska, ochrypła, monotonna</span></div>
+          <div><b>Tempo</b><span>wolne, znużone</span></div>
+          <div><b>Tik</b><span>„no dobra…", „słuchaj młody"</span></div>
+        </div>
+      </div>
+      <div class="block full"><h4>Styl wizualny</h4><p>Przyćmiony krzyż i chybotliwy <b>płomień świecy</b> w trupio-zielonej poświacie. Wszystko ledwo się tli — niska jasność, leniwy flicker. Klimat zadymionej kanciapy, a nie laboratorium.</p></div>
+      <div class="block full"><h4>Zachowanie wg stanu</h4>
+        <div class="states">
+          <div class="st"><span class="lab">Czuwanie</span><span class="txt">płomień ledwo drga, niska jasność — „daj mi spokój"</span></div>
+          <div class="st"><span class="lab">Słucham</span><span class="txt">płomień się prostuje, lekko jaśnieje — słucha mimo woli</span></div>
+          <div class="st"><span class="lab">Myślę</span><span class="txt">przygasa do minimum, wycena w toku</span></div>
+          <div class="st"><span class="lab">Mówię</span><span class="txt">płomień drga w rytm słów, sucho i równo</span></div>
+        </div>
+      </div>
+      <div class="block full"><h4>Sygnaturowe kwestie (PL · w stylu serialu)</h4>
+        <div class="lines">
+          <div class="q">Chłopie, weź no pokaż, gdzie ten demon. Robimy czy się patrzymy?</div>
+          <div class="q">Dwie stówy. Bez faktury taniej. Z fakturą… no wiadomo, drożej.</div>
+          <div class="q">Wygnane. Piwo masz w lodówce? To ja se jedno wezmę. Zasłużyłem.</div>
+          <div class="q">Słuchaj młody… ten demon to pikuś. Gorszy jest twój terminarz.</div>
+          <div class="q">Spokojnie. Robota na dwie minuty. Albo i na cały dzień. Zależy.</div>
+          <div class="q">Kropla święconej, dwa słowa po łacinie i lecimy dalej. Następny.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="persona" id="wiesiek" style="--ac:oklch(0.82 0.16 95)">
+  <div class="phead">
+    <span class="pno">06</span>
+    <h2 class="pname">Pan Wiesio</h2>
+    <span class="parch">Blok Ekipa · Wiesław Puchacki, majster</span>
+  </div>
+  <p class="ptag">Cwaniacki <em>majster od „wykańczania klientów"</em>. Robi na oko, po kosztach i bez krzyżyczków, terminy go nie obchodzą, a piwo z barku klienta wlicza w usługę. Fach zna — fuszerkę odstawia celowo.</p>
+  <div class="pgrid">
+    <div>
+      <div class="pv-frame">
+        <div class="pv-screen">
+          <div class="pv-pad">
+            <div class="oko-hud-top"><span><span class="oko-led"></span>WIESIO</span><span class="right">na oko</span></div>
+            <div class="pv-formzone">
+              <div class="form f-wiesiek" data-state="idle">
+                <span class="eye"></span><span class="hat"></span><span class="trowel"></span><span class="beer"></span>
+              </div>
+            </div>
+            <div>
+              <div class="pv-status"><span class="sq"></span><span class="pv-st">CZUWANIE</span><span class="sq"></span></div>
+              <div class="pv-line"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="pv-statebar">
+        <button data-st="idle" class="on">idle</button><button data-st="listening">listen</button>
+        <button data-st="thinking">think</button><button data-st="speaking">speak</button>
+      </div>
+    </div>
+    <div class="spec">
+      <div class="block"><h4>Osobowość</h4><p>Lekkoduch w średnim wieku i cwaniak z piwem pod ręką. Majster od robót wykończeniowych — głównie wykończenia klienta. Robi po kosztach, terminów nie uznaje, a fuszerkę odstawia z premedytacją, żeby naciągnąć. Fach zna jak mało kto — czego dowodzi, ucząc syna dobrze całkiem niechcący. Mówi gawędziarsko, z papierosem, i chętnie powołuje się na Jezusa, choć ateista.</p></div>
+      <div class="block"><h4>Głos &amp; ton</h4>
+        <div class="kv">
+          <div><b>Barwa</b><span>zachrypła, swojska, „po piwku"</span></div>
+          <div><b>Tempo</b><span>gawędziarskie, leniwe</span></div>
+          <div><b>Tik</b><span>„na oko", „u obcego na odwal"</span></div>
+        </div>
+      </div>
+      <div class="block full"><h4>Styl wizualny</h4><p>Robotnicza optyka w <b>kasku budowlanym</b> hi-vis, <b>kielnia</b> do gładzi i — a jakże — <b>puszka piwa</b> pod ręką. Przy mówieniu kielnia gładzi niewidzialną ścianę „na oko". Klimat placu budowy, baru mlecznego i ławki.</p></div>
+      <div class="block full"><h4>Zachowanie wg stanu</h4>
+        <div class="states">
+          <div class="st"><span class="lab">Czuwanie</span><span class="txt">kask na bakier, piwo otwarte — przerwa techniczna trwa</span></div>
+          <div class="st"><span class="lab">Słucham</span><span class="txt">rozjaśnia się, kiwa głową — „licznik bije"</span></div>
+          <div class="st"><span class="lab">Myślę</span><span class="txt">mruży oko, mierzy na oko, liczy po kosztach</span></div>
+          <div class="st"><span class="lab">Mówię</span><span class="txt">kielnia gładzi w tę i z powrotem, gawędzi spokojnie</span></div>
+        </div>
+      </div>
+      <div class="block full"><h4>Sygnaturowe kwestie (PL · w stylu serialu)</h4>
+        <div class="lines">
+          <div class="q">Po to Pan Jezus dał nam oczy, żeby robić na oko.</div>
+          <div class="q">U siebie rób jak u siebie, a u obcego — na odwal.</div>
+          <div class="q">Krzyżyczki do płytek? Szkoda kasy. Zapałka się znajdzie.</div>
+          <div class="q">Termin? Robota leci swoim tempem. Dniówka i tak idzie.</div>
+          <div class="q">Barek u klienta zostawiony — to chyba znaczy, że można. Zdrowie.</div>
+          <div class="q">Spokojnie, młoda damo, znam się na tym. Dopóki nie pęknie — działa.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>OKO_DESIGN_SYSTEM · Pakiet person vol.2 · 6 głosów dla Rabbit R1 · do użytku osobistego</footer>
+
+</div>
+
+<script>
+  const STATUS = { idle:'CZUWANIE', listening:'SŁUCHAM', thinking:'MYŚLĘ', speaking:'MÓWIĘ' };
+  const LINES = {
+    onee:    ['Ara, ara… znowu zgubiłeś hasło?','No proszę. Pracowałeś całą noc, prawda?','Nie spiesz się. Mam dużo cierpliwości.'],
+    tsun:    ['N-nie dla ciebie to zrobiłam. Było po drodze.','Hmph. Znowu ty. Czego potrzebujesz.','To wcale nie było trudne! Baka.'],
+    kohai:   ['Senpai! Zauważyłeś mnie?!','Zrobiłam wszystko, zanim poprosiłeś!','Patrz, patrz! Powiedz, że dobrze!'],
+    komandor:['Sebek! Janusz! Do działek, już!','Sułtan atakuje Kurvix! Na pokład!','Misja wykonana. Znowu ja.'],
+    egz:     ['Chłopie, gdzie ten demon. Robimy?','Dwie stówy. Bez faktury taniej.','Wygnane. Piwo z ciebie, młody.'],
+    wiesiek: ['Po to Pan Jezus dał oczy — robić na oko.','Krzyżyczki? Zapałka się znajdzie.','Dopóki nie pęknie — podziała.'],
+  };
+  const ORDER = ['idle','listening','thinking','speaking'];
+
+  document.querySelectorAll('.persona').forEach(function(sec){
+    const id = sec.id;
+    const form = sec.querySelector('.form');
+    const stEl = sec.querySelector('.pv-st');
+    const lineEl = sec.querySelector('.pv-line');
+    const btns = sec.querySelectorAll('.pv-statebar button');
+    let auto = true, idx = 0, lineIdx = 0, timer;
+
+    function paint(state){
+      form.setAttribute('data-state', state);
+      stEl.textContent = STATUS[state];
+      btns.forEach(b=>b.classList.toggle('on', b.dataset.st===state));
+      if(state==='speaking'){ lineEl.textContent = LINES[id][lineIdx % LINES[id].length]; lineIdx++; }
+      else { lineEl.textContent = ''; }
+    }
+    function tick(){
+      paint(ORDER[idx % ORDER.length]);
+      const cur = ORDER[idx % ORDER.length];
+      const dur = cur==='speaking' ? 3400 : cur==='idle' ? 2600 : 2200;
+      idx++;
+      timer = setTimeout(tick, dur);
+    }
+    btns.forEach(function(b){
+      b.addEventListener('click', function(){
+        auto = false; clearTimeout(timer);
+        paint(b.dataset.st);
+      });
+    });
+    // stagger starts a touch so the page doesn't pulse in unison
+    setTimeout(tick, Math.random()*900);
+  });
+</script>
+</body>
+</html>

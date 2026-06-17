@@ -20,42 +20,13 @@
             android:textColor="@color/clinical_300"
             android:textSize="10sp" />
 
-        <RadioGroup
-            android:id="@+id/skinGroup"
+        <Spinner
+            android:id="@+id/skinSpinner"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp">
-
-            <RadioButton
-                android:id="@+id/skinHal"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:fontFamily="monospace"
-                android:paddingVertical="4dp"
-                android:text="@string/skin_hal9000"
-                android:textColor="@color/clinical_50"
-                android:textSize="13sp" />
-
-            <RadioButton
-                android:id="@+id/skinGlados"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:fontFamily="monospace"
-                android:paddingVertical="4dp"
-                android:text="@string/skin_glados"
-                android:textColor="@color/clinical_50"
-                android:textSize="13sp" />
-
-            <RadioButton
-                android:id="@+id/skinTars"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:fontFamily="monospace"
-                android:paddingVertical="4dp"
-                android:text="@string/skin_tars"
-                android:textColor="@color/clinical_50"
-                android:textSize="13sp" />
-        </RadioGroup>
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_transcript"
+            android:padding="8dp" />
 
         <TextView
             android:id="@+id/tarsTraitsTitle"
@@ -223,13 +194,23 @@
             android:layout_marginTop="8dp"
             android:background="@drawable/bg_transcript"
             android:fontFamily="monospace"
+            android:gravity="top"
             android:hint="@string/settings_backend_hint"
-            android:inputType="textUri"
+            android:inputType="textMultiLine|textUri"
+            android:minLines="2"
             android:padding="10dp"
-            android:singleLine="true"
             android:textColor="@color/clinical_50"
             android:textColorHint="@color/clinical_700"
             android:textSize="11sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:fontFamily="monospace"
+            android:text="@string/settings_backend_help"
+            android:textColor="@color/clinical_500"
+            android:textSize="9sp" />
 
         <TextView
             android:layout_width="match_parent"

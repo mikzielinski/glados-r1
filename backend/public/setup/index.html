@@ -21,6 +21,7 @@
         <button type="button" class="nav-item" data-page="integrations">🔌 Integracje</button>
         <button type="button" class="nav-item" data-page="templates">📄 Szablony docs</button>
         <button type="button" class="nav-item" data-page="memory">🧠 Pamięć</button>
+        <button type="button" class="nav-item" data-page="rag">🔍 Indeks RAG</button>
         <button type="button" class="nav-item" data-page="standards">📐 Standardy kodu</button>
         <button type="button" class="nav-item" data-page="skills">⚡ Skille</button>
         <button type="button" class="nav-item" data-page="settings">⚙️ Ustawienia</button>
@@ -53,6 +54,7 @@
               <div class="chip-row">
                 <button type="button" class="chip" data-goto="integrations">Połącz GitHub</button>
                 <button type="button" class="chip" data-goto="templates">Dodaj szablon</button>
+                <button type="button" class="chip" data-goto="rag">Indeks RAG</button>
                 <button type="button" class="chip" data-goto="standards">Wgraj standard PDF</button>
                 <button type="button" class="chip" data-goto="skills">Import skilli</button>
               </div>
@@ -155,9 +157,15 @@
           <div class="card-block">
             <div class="card-head">
               <h2>Fakty i notatki</h2>
-              <button type="button" class="btn sm danger" id="memory-clear">Wyczyść wszystko</button>
+              <div class="btn-row">
+                <button type="button" class="btn sm danger" id="memory-clear">Wyczyść globalną</button>
+                <button type="button" class="btn sm danger" id="memory-reset-all">Reset pamięci + RAG</button>
+              </div>
             </div>
-            <p class="muted">Kontekst użytkownika dla SLM i agenta chmurowego — nie mylić ze szablonami ani standardami PDF.</p>
+            <p class="muted">
+              Kontekst użytkownika dla SLM i agenta — nie mylić ze szablonami ani standardami PDF.
+              Gdy coś jest nie tak: <strong>Reset pamięci + RAG</strong> czyści wszystkie profile i od razu przebudowuje indeks.
+            </p>
             <label>Nowa notatka<textarea id="memory-text" rows="3" placeholder="Zapamiętaj, że…"></textarea></label>
             <div class="btn-row">
               <button type="button" class="btn primary" id="memory-learn">Dodaj notatkę</button>
@@ -169,6 +177,45 @@
               <table class="data-table">
                 <thead><tr><th>Tytuł</th><th>Typ</th><th>Podgląd</th><th></th></tr></thead>
                 <tbody id="memory-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- RAG -->
+        <section class="page" data-page="rag">
+          <div class="stat-grid" id="rag-stats"></div>
+          <div class="grid-2">
+            <div class="card-block">
+              <div class="card-head">
+                <h2>Indeks wiedzy (RAG)</h2>
+                <button type="button" class="btn primary sm" id="rag-reindex">Wymuś indeksowanie</button>
+              </div>
+              <p class="muted">
+                Łączy pamięć, standardy PDF i szablony docs w jeden indeks wyszukiwania.
+                Agent korzysta z RAG dopiero gdy status to <strong>gotowy</strong>.
+              </p>
+              <div class="inline-status" id="rag-status-line"></div>
+              <dl class="meta-list" id="rag-meta"></dl>
+            </div>
+            <div class="card-block">
+              <h2>Test wyszukiwania</h2>
+              <label>Zapytanie<input id="rag-query" placeholder="np. code review, README, imię użytkownika" /></label>
+              <button type="button" class="btn" id="rag-search">Szukaj w RAG</button>
+              <div class="table-wrap tall" style="margin-top:12px">
+                <table class="data-table">
+                  <thead><tr><th>Trafienie</th><th>Typ</th><th>Score</th></tr></thead>
+                  <tbody id="rag-hits-body"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="card-block">
+            <h2>Źródła w indeksie</h2>
+            <div class="table-wrap tall">
+              <table class="data-table">
+                <thead><tr><th>Typ</th><th>Nazwa</th><th>Chunki</th><th>Znaki</th><th>W RAG</th></tr></thead>
+                <tbody id="rag-sources-body"></tbody>
               </table>
             </div>
           </div>
@@ -188,7 +235,7 @@
                 <tbody id="standards-body"></tbody>
               </table>
             </div>
-            <p class="hint muted">Wymaga <code>poppler</code> (<code>brew install poppler</code>).</p>
+            <p class="hint muted" id="standards-poppler-hint">Sprawdzanie poppler…</p>
           </div>
         </section>
 

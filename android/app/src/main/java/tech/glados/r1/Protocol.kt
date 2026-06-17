@@ -71,7 +71,8 @@ object Protocol {
 
     fun memoryList(): String = JSONObject().put("type", "memory_list").toString()
 
-    fun memoryClear(): String = JSONObject().put("type", "memory_clear").toString()
+    fun memoryClear(scope: String = "device"): String =
+        JSONObject().put("type", "memory_clear").put("scope", scope).toString()
 
     fun deviceContext(
         batteryPct: Int? = null,

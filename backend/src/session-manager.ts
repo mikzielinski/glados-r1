@@ -5,6 +5,7 @@ import type { SkillRegistry } from "./skills.js";
 import type { StandardsRegistry } from "./standards.js";
 import type { MemoryStore } from "./memory-store.js";
 import type { DocTemplateStore } from "./doc-templates.js";
+import type { KnowledgeIndex } from "./knowledge-index.js";
 import { Session } from "./session.js";
 import { WhisperStt } from "./stt.js";
 import { GladosTts } from "./tts.js";
@@ -25,6 +26,7 @@ export class SessionManager {
     private readonly standards: StandardsRegistry,
     private readonly memory: MemoryStore,
     private readonly docTemplates: DocTemplateStore,
+    private readonly knowledgeIndex: KnowledgeIndex,
   ) {}
 
   attach(
@@ -40,7 +42,7 @@ export class SessionManager {
     }
 
     log.info(`session ${sessionId}: new session resume=${resumeAgentId ?? "none"}`);
-    const session = new Session(sessionId, ws, this.cfg, this.stt, this.tts, resumeAgentId, this.skills, this.standards, this.memory, this.docTemplates);
+    const session = new Session(sessionId, ws, this.cfg, this.stt, this.tts, resumeAgentId, this.skills, this.standards, this.memory, this.docTemplates, this.knowledgeIndex);
     this.sessions.set(sessionId, session);
     session.start();
     return session;
