@@ -50,7 +50,10 @@ export class HybridBrain implements BrainLike {
   }
 
   async cancelActiveTurn(): Promise<void> {
-    await this.cursor.cancelActiveTurn();
+    await Promise.all([
+      this.slm.cancelActiveTurn?.(),
+      this.cursor.cancelActiveTurn?.(),
+    ]);
   }
 
   resetChatContext(): void {

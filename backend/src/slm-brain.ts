@@ -1,6 +1,6 @@
 import type { Config } from "./config.js";
 import { logger } from "./logger.js";
-import type { BrainLike, TurnHooks, TurnResult } from "./brain.js";
+import { TurnCancelledError, type BrainLike, type TurnHooks, type TurnResult } from "./brain.js";
 import type { Intent } from "./intent.js";
 import {
   chatInstructions,
@@ -13,7 +13,10 @@ import { personaForSkin, type AgentSkinId } from "./agent-skins.js";
 import { assistantLabel, chatInstructionsForSkin, fewShotForSkin } from "./skin-replies.js";
 import { normalizeTarsTraits, slmTemperatureForTars, tarsTraitsPrompt, type TarsTraits } from "./tars-traits.js";
 import { slmPolishInstructions } from "./polish-language.js";
-import { polishForSpeech } from "./spoken-polish.js";
+import { slmEnglishInstructions } from "./english-language.js";
+import { prepareForSpeech } from "./spoken-polish.js";
+import type { ConversationLang } from "./conversation-lang.js";
+import { chatInstructionsForSkinEn, fewShotForSkinEn } from "./skin-replies-en.js";
 import { deviceFactsBlock, splitTranscriptAndContext } from "./transcript-context.js";
 
 const log = logger("slm");
@@ -32,6 +35,7 @@ const LOCAL_SLM_ID = "local-ollama";
 export class SlmBrain implements BrainLike {
   private readonly history: ChatMessage[] = [];
   private available = false;
+  private activeAbort?: AbortController;
 
   constructor(private readonly cfg: Config) {}
 
@@ -69,44 +73,67 @@ export class SlmBrain implements BrainLike {
     }
 
     const skin = hooks.skin ?? "hal9000";
+    const lang: ConversationLang = hooks.lang ?? "pl";
     const traits = normalizeTarsTraits(hooks.tarsTraits);
     const { userText, deviceFacts } = splitTranscriptAndContext(transcript.trim());
     this.history.push({ role: "user", content: userText || transcript.trim() });
     this.trimHistory();
 
     hooks.onAssistantText?.("…");
+    if (hooks.isCancelled?.()) throw new TurnCancelledError();
 
     const persona = personaForSkin(skin);
-    const polishBlock = `\n\n${slmPolishInstructions(skin)}`;
+    const langBlock =
+      lang === "en"
+        ? `\n\n${slmEnglishInstructions(skin)}`
+        : `\n\n${slmPolishInstructions(skin)}`;
     const tarsBlock = skin === "tars" ? `\n\n${tarsTraitsPrompt(traits)}` : "";
     const memoryBlock = hooks.memoryBlock?.trim() ? `\n\n${hooks.memoryBlock.trim()}` : "";
     const templatesBlock = hooks.templatesBlock?.trim() ? `\n\n${hooks.templatesBlock.trim()}` : "";
     const temperature = skin === "tars" ? slmTemperatureForTars(traits, 0.48) : 0.48;
-    const modeInstructions = modeForIntent(intent, skin, hooks.memoryBlock, traits);
+    const modeInstructions = modeForIntent(intent, skin, hooks.memoryBlock, traits, lang);
     const generalTopics =
       intent === "chat" || intent === "net" ? `\n\n${slmGeneralTopicsInstructions()}` : "";
-    const resp = await fetch(`${this.cfg.ollamaBaseUrl}/api/chat`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      signal: AbortSignal.timeout(this.cfg.slmTimeoutMs),
-      body: JSON.stringify({
-        model: this.cfg.ollamaModel,
-        messages: [
-          {
-            role: "system",
-            content: `${persona}${polishBlock}\n\n${modeInstructions}${generalTopics}\n\n${deviceFactsBlock(deviceFacts)}${tarsBlock}${templatesBlock}${memoryBlock}\n\n${fewShotForSkin(skin, skin === "tars" ? traits : undefined)}`,
+    const fewShots =
+      lang === "en"
+        ? fewShotForSkinEn(skin, skin === "tars" ? traits : undefined)
+        : fewShotForSkin(skin, skin === "tars" ? traits : undefined);
+    const abort = new AbortController();
+    this.activeAbort = abort;
+    const timeout = setTimeout(() => abort.abort(), this.cfg.slmTimeoutMs);
+    let resp: Response;
+    try {
+      resp = await fetch(`${this.cfg.ollamaBaseUrl}/api/chat`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        signal: abort.signal,
+        body: JSON.stringify({
+          model: this.cfg.ollamaModel,
+          messages: [
+            {
+              role: "system",
+              content: `${persona}${langBlock}\n\n${modeInstructions}${generalTopics}\n\n${deviceFactsBlock(deviceFacts)}${tarsBlock}${templatesBlock}${memoryBlock}\n\n${fewShots}`,
+            },
+            ...this.history,
+          ],
+          stream: false,
+          options: {
+            temperature,
+            top_p: 0.9,
+            num_predict: Math.max(this.cfg.slmMaxTokens, 160),
+            stop: ["Użytkownik:", "User:", "\nU:", `\n${assistantLabel(skin)}:`],
           },
-          ...this.history,
-        ],
-        stream: false,
-        options: {
-          temperature,
-          top_p: 0.9,
-          num_predict: Math.max(this.cfg.slmMaxTokens, 160),
-          stop: ["Użytkownik:", "User:", "\nU:", `\n${assistantLabel(skin)}:`],
-        },
-      }),
-    });
+        }),
+      });
+    } catch (err) {
+      if (abort.signal.aborted || hooks.isCancelled?.()) throw new TurnCancelledError();
+      throw err;
+    } finally {
+      clearTimeout(timeout);
+      if (this.activeAbort === abort) this.activeAbort = undefined;
+    }
+
+    if (hooks.isCancelled?.()) throw new TurnCancelledError();
 
     if (!resp.ok) {
       const body = await resp.text().catch(() => "");
@@ -115,8 +142,10 @@ export class SlmBrain implements BrainLike {
 
     const data = (await resp.json()) as { message?: { content?: string } };
     const raw = (data.message?.content ?? "").trim() ||
-      "Słyszę cię, ale mój lokalny mózg zwrócił pustkę. Typowe.";
-    const spoken = polishForSpeech(raw);
+      (lang === "en"
+        ? "I hear you, but my local brain returned nothing. Typical."
+        : "Słyszę cię, ale mój lokalny mózg zwrócił pustkę. Typowe.");
+    const spoken = prepareForSpeech(raw, lang);
 
     this.history.push({ role: "assistant", content: spoken });
     this.trimHistory();
@@ -126,7 +155,13 @@ export class SlmBrain implements BrainLike {
     return { spoken, runId: `slm-${Date.now()}` };
   }
 
-  async dispose(): Promise<void> {}
+  async cancelActiveTurn(): Promise<void> {
+    this.activeAbort?.abort();
+  }
+
+  async dispose(): Promise<void> {
+    this.activeAbort?.abort();
+  }
 
   resetChatContext(): void {
     this.clearHistory();
@@ -143,16 +178,29 @@ export class SlmBrain implements BrainLike {
   }
 }
 
-function modeForIntent(intent: Intent, skin: AgentSkinId, memoryBlock?: string, traits?: TarsTraits): string {
+function modeForIntent(
+  intent: Intent,
+  skin: AgentSkinId,
+  memoryBlock?: string,
+  traits?: TarsTraits,
+  lang: ConversationLang = "pl",
+): string {
+  const chat =
+    lang === "en"
+      ? chatInstructionsForSkinEn(skin, traits)
+      : chatInstructionsForSkin(skin, traits);
   switch (intent) {
     case "code":
-      return `${codeInstructions()}\nTryb lokalny SLM — bez edycji plików. Powiedz użytkownikowi, żeby poprosił o kod, GitHub lub UiPath (wtedy włączy się agent chmurowy w BRAIN_MODE=hybrid).`;
+      return lang === "en"
+        ? `${codeInstructions()}\nLocal SLM mode — no file edits. Tell the user to ask for code, GitHub, or UiPath (cloud agent in BRAIN_MODE=hybrid).`
+        : `${codeInstructions()}\nTryb lokalny SLM — bez edycji plików. Powiedz użytkownikowi, żeby poprosił o kod, GitHub lub UiPath (wtedy włączy się agent chmurowy w BRAIN_MODE=hybrid).`;
     case "net":
-      return memoryBlock?.includes("WYNIKI WYSZUKIWANIA INTERNETU")
-        ? `${netSearchInstructions()}\nBez chmury — odpowiedz z wyników wyszukiwania w kontekście.`
-        : `${netLocalInstructions()}\nSpróbuj odpowiedzieć z pamięci kontekstowej; jeśli brak danych — powiedz wprost.`;
+      return memoryBlock?.includes("WYNIKI WYSZUKIWANIA INTERNETU") ||
+        memoryBlock?.includes("INTERNET SEARCH RESULTS")
+        ? `${netSearchInstructions()}\n${lang === "en" ? "No cloud — answer from search results in context." : "Bez chmury — odpowiedz z wyników wyszukiwania w kontekście."}`
+        : `${netLocalInstructions()}\n${lang === "en" ? "Try context memory; if missing data, say so plainly." : "Spróbuj odpowiedzieć z pamięci kontekstowej; jeśli brak danych — powiedz wprost."}`;
     default:
-      return chatInstructionsForSkin(skin, traits);
+      return chat;
   }
 }
 

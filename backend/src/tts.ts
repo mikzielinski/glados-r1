@@ -4,7 +4,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { isVol2FemaleSkin, isVol2MaleSkin, isVol2Skin, type AgentSkinId } from "./agent-skins.js";
 import { fishVoiceIdForSkin } from "./agent-skins.js";
-import { polishForSpeech } from "./spoken-polish.js";
+import { prepareForSpeech } from "./spoken-polish.js";
+import type { ConversationLang } from "./conversation-lang.js";
 import { fishPolishHint } from "./skin-replies.js";
 import type { Config } from "./config.js";
 import { logger } from "./logger.js";
@@ -46,17 +47,22 @@ export class GladosTts {
     log.info(`TTS default provider: ${this.defaultProvider}`);
   }
 
-  async synthesize(text: string, skin: AgentSkinId = "glados"): Promise<TtsResult> {
-    const clean = polishForSpeech(text.trim());
+  async synthesize(text: string, skin: AgentSkinId = "glados", lang: ConversationLang = "pl"): Promise<TtsResult> {
+    const clean = prepareForSpeech(text.trim(), lang);
     if (!clean) return { pcm: Buffer.alloc(0), sampleRate: 48_000 };
 
-    const provider = pickProvider(clean, this.cfg, this.defaultProvider, skin);
+    const provider = pickProvider(clean, this.cfg, this.defaultProvider, skin, lang);
     log.info(`TTS provider=${provider} skin=${skin} chars=${clean.length}`);
 
     try {
       const result = await this.synthesizeWithProvider(clean, provider, skin);
       return toR1PlaybackRate(result.pcm, result.sampleRate);
     } catch (err) {
+      if (provider === "fish" && lang === "en" && this.cfg.piperModel) {
+        log.warn(`Fish Audio failed for ${skin} — falling back to Piper EN`, err);
+        const result = await this.synthesizeWithProvider(clean, "piper", skin);
+        return toR1PlaybackRate(result.pcm, result.sampleRate);
+      }
       if (provider === "fish" && this.cfg.piperModelPl) {
         log.warn(`Fish Audio failed for ${skin} — falling back to Piper PL`, err);
         const result = await this.synthesizeWithProvider(clean, "piper-pl", skin);
@@ -280,10 +286,11 @@ function pickProvider(
   cfg: Config,
   fallback: TtsProvider,
   skin: AgentSkinId,
+  lang: ConversationLang = "pl",
 ): TtsProvider {
   if (cfg.ttsMode !== "auto" && cfg.ttsMode !== "fish" && cfg.ttsMode !== "piper") return fallback;
 
-  const polish = looksPolish(text);
+  const polish = lang === "en" ? false : looksPolish(text);
 
   // GLaDOS + vol.2: Fish S2-Pro — native Polish (Piper gosia/darkman brzmi obco).
   if ((skin === "glados" || isVol2Skin(skin)) && cfg.fishApiKey && polish) return "fish";
@@ -307,6 +314,7 @@ function pickProvider(
   if ((skin === "hal9000" || skin === "tars") && cfg.fishApiKey && !polish) return "fish";
 
   if (cfg.fishApiKey && skin === "glados") return "fish";
+  if (lang === "en" && cfg.piperModel) return "piper";
   if (cfg.piperModelPl && polish) return "piper-pl";
   if (cfg.piperModel) return "piper";
   if (polish) return "say-pl";

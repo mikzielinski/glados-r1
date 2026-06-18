@@ -2,6 +2,7 @@ import { Agent, CursorAgentError, type Run, type SDKAgent, type SDKCustomTool } 
 import type { Config } from "./config.js";
 import { logger } from "./logger.js";
 import type { Intent } from "./intent.js";
+import type { ConversationLang } from "./conversation-lang.js";
 import type { SkillRegistry } from "./skills.js";
 import {
   buildPrompt,
@@ -11,6 +12,7 @@ import {
 } from "./persona.js";
 import { personaForSkin, type AgentSkinId } from "./agent-skins.js";
 import { slmPolishInstructions } from "./polish-language.js";
+import { slmEnglishInstructions } from "./english-language.js";
 import { chatInstructionsForSkin, codeInstructionsForSkin } from "./skin-replies.js";
 import { normalizeTarsTraits, tarsTraitsPrompt } from "./tars-traits.js";
 import type { StandardsRegistry } from "./standards.js";
@@ -32,6 +34,8 @@ export interface TurnHooks {
   memoryBlock?: string;
   /** Named doc templates block (separate from memory facts). */
   templatesBlock?: string;
+  /** pl | en — from R1 settings. */
+  lang?: ConversationLang;
 }
 
 export class TurnCancelledError extends Error {
@@ -172,9 +176,13 @@ export class Brain implements BrainLike {
     const templatesBlock = hooks.templatesBlock?.trim() ? `\n\n${hooks.templatesBlock.trim()}` : "";
     const tarsBlock = skin === "tars" ? `\n\n${tarsTraitsPrompt(traits)}` : "";
     const persona = personaForSkin(skin);
-    const polishBlock = `\n\n${slmPolishInstructions(skin)}`;
+    const lang = hooks.lang ?? "pl";
+    const langBlock =
+      lang === "en"
+        ? `\n\n${slmEnglishInstructions(skin)}`
+        : `\n\n${slmPolishInstructions(skin)}`;
     const prompt =
-      buildPrompt(persona + polishBlock, instructions, transcript) + skillHint + standardsBlock + templatesBlock + memoryBlock + tarsBlock;
+      buildPrompt(persona + langBlock, instructions, transcript) + skillHint + standardsBlock + templatesBlock + memoryBlock + tarsBlock;
 
     const run = await this.sendWithRetry(agent, prompt, customTools);
     this.activeRun = run;

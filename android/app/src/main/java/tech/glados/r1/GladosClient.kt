@@ -229,6 +229,7 @@ class GladosClient(
                 prefs.sessionId,
                 prefs.skinId,
                 prefs.memoryDeviceId,
+                prefs.conversationLang,
                 if (prefs.skin == AgentSkin.TARS) prefs.tarsHonesty else null,
                 if (prefs.skin == AgentSkin.TARS) prefs.tarsHumor else null,
                 if (prefs.skin == AgentSkin.TARS) prefs.tarsSarcasm else null,

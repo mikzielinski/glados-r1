@@ -1,11 +1,17 @@
 package tech.glados.r1
 
 import android.Manifest
+import android.content.BroadcastReceiver
 import android.content.Intent
+import android.content.IntentFilter
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.util.Base64
 import android.content.pm.PackageManager
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.net.wifi.WifiManager
 import android.os.Bundle
 import android.os.Handler
@@ -43,6 +49,7 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
     private lateinit var prefs: Prefs
     private lateinit var client: GladosClient
     private lateinit var hardware: RabbitHardware
+    private lateinit var localVoice: LocalVoiceHandler
     private val audio = AudioEngine(this, captureSampleRate = 16000)
 
     private var pttActive = false
@@ -73,6 +80,25 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
     private var tarsHumorValueRef: android.widget.TextView? = null
     private var tarsSarcasmValueRef: android.widget.TextView? = null
     private var tarsHudHideRunnable: Runnable? = null
+    private var sideLongPressFired = false
+    private var sideWakeDebouncing = false
+    private val sideLongPressRunnable = Runnable { onSideButtonLongPress() }
+    private val screenOnReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: android.content.Context?, intent: Intent?) {
+            sideWakeDebouncing = true
+            mainHandler.postDelayed(
+                { sideWakeDebouncing = false },
+                SideButtonPower.WAKE_DEBOUNCE_MS,
+            )
+            client.reconnectNow()
+        }
+    }
+    private var networkCallbackRegistered = false
+    private val networkCallback = object : ConnectivityManager.NetworkCallback() {
+        override fun onAvailable(network: Network) {
+            mainHandler.post { client.reconnectNow() }
+        }
+    }
 
     private val memoryFilePicker =
         registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -115,6 +141,13 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
         prefs = Prefs(this)
         client = GladosClient(prefs, this)
         hardware = RabbitHardware(this)
+        localVoice = LocalVoiceHandler(
+            this,
+            hardware,
+            prefs,
+            onStatus = { setStatus(it) },
+            onLog = { speaker, text -> appendLog(speaker, text) },
+        )
 
         binding.log.movementMethod = ScrollingMovementMethod()
         applyAgentSkin(prefs.skin)
@@ -157,9 +190,29 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
 
         @Suppress("DEPRECATION")
         val wm = applicationContext.getSystemService(WIFI_SERVICE) as WifiManager
-        wifiLock = wm.createWifiLock(WifiManager.WIFI_MODE_FULL, "oko:wifi")
+        wifiLock = wm.createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "oko:wifi")
 
+        registerNetworkCallback()
         applyUiState()
+    }
+
+    private fun registerNetworkCallback() {
+        if (networkCallbackRegistered) return
+        val cm = getSystemService(ConnectivityManager::class.java) ?: return
+        val request = NetworkRequest.Builder()
+            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            .build()
+        cm.registerNetworkCallback(request, networkCallback)
+        networkCallbackRegistered = true
+    }
+
+    private fun unregisterNetworkCallback() {
+        if (!networkCallbackRegistered) return
+        try {
+            getSystemService(ConnectivityManager::class.java)?.unregisterNetworkCallback(networkCallback)
+        } catch (_: Exception) {
+        }
+        networkCallbackRegistered = false
     }
 
     /** Keep HUD below R1 camera bulge / status inset. */
@@ -176,6 +229,16 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
 
     override fun onStart() {
         super.onStart()
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(
+                screenOnReceiver,
+                IntentFilter(Intent.ACTION_SCREEN_ON),
+                android.content.Context.RECEIVER_NOT_EXPORTED,
+            )
+        } else {
+            @Suppress("UnspecifiedRegisterReceiverFlag")
+            registerReceiver(screenOnReceiver, IntentFilter(Intent.ACTION_SCREEN_ON))
+        }
         wakeLock?.acquire(2 * 60 * 60 * 1000L)
         @Suppress("DEPRECATION")
         if (wifiLock?.isHeld != true) wifiLock?.acquire()
@@ -184,18 +247,21 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
 
     override fun onStop() {
         super.onStop()
+        mainHandler.removeCallbacks(sideLongPressRunnable)
         forceStopTalking(getString(R.string.status_disconnected))
         if (isFinishing) {
+            try {
+                unregisterReceiver(screenOnReceiver)
+            } catch (_: IllegalArgumentException) {
+            }
             client.close()
             audio.release()
-        } else {
-            // Kiosk: pause socket but keep reconnect intent for onResume.
-            client.pause()
+            if (wakeLock?.isHeld == true) wakeLock?.release()
+            @Suppress("DEPRECATION")
+            if (wifiLock?.isHeld == true) wifiLock?.release()
+            stopLocationRefresh()
         }
-        if (wakeLock?.isHeld == true) wakeLock?.release()
-        @Suppress("DEPRECATION")
-        if (wifiLock?.isHeld == true) wifiLock?.release()
-        stopLocationRefresh()
+        // Kiosk HOME: keep WebSocket + wake/WiFi locks when screen sleeps — do not pause().
     }
 
     override fun onResume() {
@@ -211,6 +277,8 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
     }
 
     override fun onDestroy() {
+        unregisterNetworkCallback()
+        localVoice.release()
         client.close()
         try {
             audio.release()
@@ -259,11 +327,11 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
         if (isSideButtonPtt(event.keyCode)) {
             when (event.action) {
                 KeyEvent.ACTION_DOWN -> {
-                    if (event.repeatCount == 0) startTalking()
+                    if (event.repeatCount == 0) onSideButtonDown()
                     return true
                 }
                 KeyEvent.ACTION_UP -> {
-                    stopTalking()
+                    onSideButtonUp()
                     return true
                 }
             }
@@ -284,7 +352,10 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
         if (handleScrollKey(keyCode, KeyEvent.ACTION_DOWN)) return true
-        if (isSideButtonPtt(keyCode)) return true
+        if (isSideButtonPtt(keyCode)) {
+            if (event.repeatCount == 0) onSideButtonDown()
+            return true
+        }
         when (keyCode) {
             KeyEvent.KEYCODE_VOLUME_UP, KeyEvent.KEYCODE_VOLUME_DOWN,
             KeyEvent.KEYCODE_BACK, KeyEvent.KEYCODE_HOME,
@@ -296,7 +367,7 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
     override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
         if (handleScrollKey(keyCode, KeyEvent.ACTION_UP)) return true
         if (isSideButtonPtt(keyCode)) {
-            stopTalking()
+            onSideButtonUp()
             return true
         }
         when (keyCode) {
@@ -329,13 +400,37 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
         binding.transcriptScroll.smoothScrollBy(0, delta)
     }
 
-    /** Side button after keylayout remap (116→F1); POWER rarely reaches apps on CipherOS. */
+    /** Side button after remap (116→F1). Stock POWER is not intercepted — system keeps sleep/wake. */
     private fun isSideButtonPtt(keyCode: Int): Boolean =
         keyCode == KeyEvent.KEYCODE_F1 ||
-            keyCode == KeyEvent.KEYCODE_POWER ||
             keyCode == KeyEvent.KEYCODE_CAMERA ||
             keyCode == KeyEvent.KEYCODE_VOICE_ASSIST ||
             keyCode == KeyEvent.KEYCODE_STEM_PRIMARY
+
+    private fun onSideButtonDown() {
+        if (sideWakeDebouncing) return
+        sideLongPressFired = false
+        mainHandler.postDelayed(sideLongPressRunnable, SideButtonPower.LONG_PRESS_MS)
+        startTalking()
+    }
+
+    private fun onSideButtonUp() {
+        mainHandler.removeCallbacks(sideLongPressRunnable)
+        if (sideLongPressFired) return
+        stopTalking()
+    }
+
+    /** Long hold → sleep. Short hold → PTT. Requires fix-r1-side-button.sh remap. */
+    private fun onSideButtonLongPress() {
+        sideLongPressFired = true
+        forceStopTalking(getString(R.string.side_button_sleep_hint))
+        if (SideButtonPower.lockScreen(this)) return
+        // No Device Admin — fall back to system power (sleep / menu) if remap is active.
+        dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_POWER))
+        mainHandler.postDelayed({
+            dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_POWER))
+        }, 50)
+    }
 
     private fun requestSensorPermissions() {
         val needed = mutableListOf<String>()
@@ -428,18 +523,32 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
     }
 
     private fun startTalking() {
-        if (pttActive) return
+        if (pttActive || localVoice.isListening()) return
         publishDeviceContextQuick()
         if (!client.isReady()) {
-            setStatus(
-                if (connected) getString(R.string.status_connecting)
-                else getString(R.string.status_reconnecting),
-            )
-            return
+            client.reconnectNow()
+            if (!client.isReady()) {
+                if (localVoice.startListening()) return
+                setStatus(
+                    if (connected) getString(R.string.status_connecting)
+                    else getString(R.string.status_reconnecting),
+                )
+                return
+            }
         }
-        if (serverBusy && !canInterruptPtt()) {
+        val interrupting = serverBusy && canInterruptPtt()
+        if (serverBusy && !interrupting) {
             setStatus(getString(R.string.status_busy))
             return
+        }
+        if (interrupting) {
+            if (ttsActive) {
+                audio.endPlayback()
+                ttsActive = false
+                ttsPlaybackReady = false
+                pendingTtsAudio.clear()
+            }
+            client.sendText(Protocol.cancel())
         }
         if (!hasMic) {
             micPermission.launch(Manifest.permission.RECORD_AUDIO)
@@ -476,6 +585,10 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
     }
 
     private fun stopTalking() {
+        if (localVoice.isListening()) {
+            localVoice.stopListening()
+            return
+        }
         if (!pttActive) return
         pttActive = false
         pttServerReady = false
@@ -722,9 +835,9 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
         binding.hint.text = when {
             !connected && !client.isReady() -> getString(R.string.hint_offline)
             pttActive -> getString(R.string.ptt_listening)
-            backendState == "working" -> getString(R.string.hint_busy_interrupt)
+            canInterruptPtt() -> getString(R.string.hint_busy_interrupt)
             serverBusy -> getString(R.string.hint_busy)
-            else -> getString(R.string.hint_ptt)
+            else -> getString(R.string.hint_side_button)
         }
     }
 
@@ -763,10 +876,11 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
         return stripped.substringBefore("/").substringBefore(":")
     }
 
-    /** PTT while a cloud agent run is active — used to say "przerwij". */
+    /** PTT while backend is busy — hold and say "przerwij" or speak over TTS. */
     private fun canInterruptPtt(): Boolean =
         backendState == "working" ||
-            (backendState == "thinking" && backendDetail == "cloud")
+            backendState == "speaking" ||
+            backendState == "thinking"
 
     private fun applyAgentSkin(skin: AgentSkin) {
         val tokens = SkinCatalog.tokens(skin, this)
@@ -789,6 +903,20 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
         ).also { it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
         skinSpinner.adapter = skinAdapter
         skinSpinner.setSelection(AgentSkin.entries.indexOf(prefs.skin).coerceAtLeast(0))
+
+        val langSpinner = view.findViewById<android.widget.Spinner>(R.id.langSpinner)
+        val langOptions = listOf(
+            getString(R.string.settings_lang_pl) to "pl",
+            getString(R.string.settings_lang_en) to "en",
+        )
+        val langAdapter = android.widget.ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            langOptions.map { it.first },
+        ).also { it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
+        langSpinner.adapter = langAdapter
+        langSpinner.setSelection(langOptions.indexOfFirst { it.second == prefs.conversationLang }.coerceAtLeast(0))
+
         val tarsTitle = view.findViewById<android.widget.TextView>(R.id.tarsTraitsTitle)
         val tarsPanel = view.findViewById<android.widget.LinearLayout>(R.id.tarsTraitsPanel)
         val honestySeek = view.findViewById<android.widget.SeekBar>(R.id.tarsHonestySeek)
@@ -888,12 +1016,33 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
                 .show()
         }
 
+        val deviceAdminStatus = view.findViewById<android.widget.TextView>(R.id.deviceAdminStatus)
+        val deviceAdminButton = view.findViewById<android.widget.Button>(R.id.deviceAdminButton)
+        fun refreshDeviceAdminUi() {
+            val on = SideButtonPower.isAdminActive(this)
+            deviceAdminStatus.text = getString(
+                if (on) R.string.settings_device_admin_on else R.string.settings_device_admin_off,
+            )
+            deviceAdminButton.text = getString(
+                if (on) R.string.settings_device_admin_title else R.string.settings_device_admin_enable,
+            )
+        }
+        refreshDeviceAdminUi()
+        deviceAdminButton.setOnClickListener {
+            if (SideButtonPower.isAdminActive(this)) {
+                SideButtonPower.lockScreen(this)
+            } else {
+                SideButtonPower.requestAdmin(this)
+            }
+        }
+
         val dialog = AlertDialog.Builder(this)
             .setTitle(getString(R.string.settings_title))
             .setView(view)
             .setPositiveButton(getString(android.R.string.ok)) { _, _ ->
                 val skin = AgentSkin.entries[skinSpinner.selectedItemPosition]
                 prefs.skinId = skin.id
+                prefs.conversationLang = langOptions[langSpinner.selectedItemPosition].second
                 prefs.tarsHonesty = honestySeek.progress
                 prefs.tarsHumor = humorSeek.progress
                 prefs.tarsSarcasm = sarcasmSeek.progress
@@ -925,6 +1074,8 @@ class MainActivity : AppCompatActivity(), GladosClient.Listener {
             tarsHumorValueRef = null
             tarsSarcasmValueRef = null
         }
+
+        dialog.setOnShowListener { refreshDeviceAdminUi() }
 
         dialog.show()
     }

@@ -70,6 +70,21 @@ class RabbitHardware(private val context: Context) {
         }
     }
 
+    fun snapshotForLocal(): LocalSnapshot = LocalSnapshot(
+        batteryPct = batteryPct(),
+        networkLabel = networkLabelPl(networkLabel()),
+    )
+
+    data class LocalSnapshot(val batteryPct: Int?, val networkLabel: String)
+
+    private fun networkLabelPl(network: String): String = when (network) {
+        "wifi" -> "WiFi"
+        "lte" -> "LTE"
+        "offline" -> "offline"
+        "online" -> "online"
+        else -> network
+    }
+
     fun isLocationEnabled(): Boolean =
         locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
             locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)

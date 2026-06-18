@@ -13,6 +13,7 @@ object Protocol {
         sessionId: String?,
         skin: String,
         memoryDeviceId: String,
+        lang: String = "pl",
         tarsHonesty: Int? = null,
         tarsHumor: Int? = null,
         tarsSarcasm: Int? = null,
@@ -22,6 +23,7 @@ object Protocol {
             put("device", device)
             put("clientVersion", CLIENT_VERSION)
             put("memoryDeviceId", memoryDeviceId)
+            put("lang", lang)
             if (sessionId != null) put("sessionId", sessionId)
             put("skin", skin)
             if (tarsHonesty != null && tarsHumor != null && tarsSarcasm != null) {

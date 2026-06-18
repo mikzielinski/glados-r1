@@ -5,11 +5,15 @@ import { join } from "node:path";
 import type { Config } from "./config.js";
 import { logger } from "./logger.js";
 import { pcmToWav } from "./wav.js";
+import type { ConversationLang } from "./conversation-lang.js";
 
 const log = logger("stt");
 
 const DEFAULT_PL_PROMPT =
   "Użytkownik mówi po polsku. Przykład: Dzień dobry, napraw błąd w kodzie, otwórz plik w repozytorium.";
+
+const DEFAULT_EN_PROMPT =
+  "The user speaks English. Example: Hello, fix the bug in the code, open the file in the repository.";
 
 /**
  * Local speech-to-text via a whisper.cpp CLI binary (`whisper-cli` / `main`).
@@ -26,7 +30,7 @@ export class WhisperStt {
     }
   }
 
-  async transcribe(pcm: Buffer, sampleRate: number): Promise<string> {
+  async transcribe(pcm: Buffer, sampleRate: number, langOverride?: ConversationLang): Promise<string> {
     if (pcm.length === 0) return "";
     if (!this.enabled) {
       return "[mock transcript] set WHISPER_BIN and WHISPER_MODEL to enable real STT";
@@ -37,30 +41,31 @@ export class WhisperStt {
     const outPrefix = join(dir, "out");
     const normalized = normalizePcm16(pcm);
     const durationSec = normalized.length / (sampleRate * 2);
+    const lang = langOverride ?? (this.cfg.whisperLang as ConversationLang) ?? "pl";
     try {
       await writeFile(wavPath, pcmToWav(normalized, sampleRate));
-      await this.run(wavPath, outPrefix, durationSec);
+      await this.run(wavPath, outPrefix, durationSec, lang);
       const txt = await readFile(`${outPrefix}.txt`, "utf8").catch(() => "");
       const transcript = txt.trim();
-      log.info(`transcribed ${durationSec.toFixed(1)}s (${this.cfg.whisperLang}): "${transcript}"`);
+      log.info(`transcribed ${durationSec.toFixed(1)}s (${lang}): "${transcript}"`);
       return transcript;
     } finally {
       await rm(dir, { recursive: true, force: true }).catch(() => {});
     }
   }
 
-  private run(wavPath: string, outPrefix: string, durationSec: number): Promise<void> {
-    const lang = this.cfg.whisperLang || "auto";
+  private run(wavPath: string, outPrefix: string, durationSec: number, lang: ConversationLang): Promise<void> {
+    const whisperLang = lang === "en" ? "en" : this.cfg.whisperLang === "auto" ? "auto" : "pl";
     const prompt =
       this.cfg.whisperPrompt ||
-      (lang === "pl" ? DEFAULT_PL_PROMPT : "");
+      (lang === "en" ? DEFAULT_EN_PROMPT : whisperLang === "pl" ? DEFAULT_PL_PROMPT : "");
 
     const args = [
       "-m", this.cfg.whisperModel,
       "-f", wavPath,
       "-otxt",
       "-of", outPrefix,
-      "-l", lang,
+      "-l", whisperLang,
       "-t", String(this.cfg.whisperThreads),
       "-nth", String(this.cfg.whisperNoSpeechThold),
       "-np",

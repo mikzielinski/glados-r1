@@ -21,10 +21,11 @@ export function isPlausibleLocation(lat: number, lon: number, accuracyM?: number
   return true;
 }
 
-/** Human-readable place label for speech (Polish). Uses OpenStreetMap Nominatim. */
+/** Human-readable place label for speech. Uses OpenStreetMap Nominatim. */
 export async function reverseGeocodeLabel(
   lat: number,
   lon: number,
+  lang: "pl" | "en" = "pl",
 ): Promise<string | null> {
   const key = `${lat.toFixed(4)},${lon.toFixed(4)}`;
   const hit = cache.get(key);
@@ -35,7 +36,7 @@ export async function reverseGeocodeLabel(
     url.searchParams.set("lat", String(lat));
     url.searchParams.set("lon", String(lon));
     url.searchParams.set("format", "json");
-    url.searchParams.set("accept-language", "pl");
+    url.searchParams.set("accept-language", lang === "en" ? "en" : "pl");
     url.searchParams.set("zoom", "16");
 
     const res = await fetch(url, {

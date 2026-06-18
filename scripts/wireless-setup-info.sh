@@ -28,10 +28,14 @@ if [ -n "$TS" ] && [ "$TS" != "$LAN" ]; then
 fi
 echo "ws://glados-mac:${PORT}/ws"
 echo ""
-echo "4. Autostart backendu po włączeniu Maca (opcjonalnie):"
+echo "4. Backend poza Macem (VPS / NAS):"
+echo "   ./scripts/setup-linux-backend.sh   # na serwerze Linux"
+echo "   docs/backend-hosting.md"
+echo ""
+echo "5. Autostart backendu na Macu (dev, opcjonalnie):"
 echo "   ./scripts/install-backend-launchagent.sh"
 echo ""
-echo "5. Kabel USB — tylko do: adb install, flash, fix side button (jednorazowo)"
+echo "6. Kabel USB — tylko do: adb install, flash, fix side button (jednorazowo)"
 echo ""
 if [ -n "$LAN" ]; then
   echo "Test z Maca: curl -s http://${LAN}:${PORT}/health | head -c 120; echo"

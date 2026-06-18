@@ -17,17 +17,17 @@
         </div>
       </div>
       <nav class="sidebar-nav" id="nav">
-        <button type="button" class="nav-item active" data-page="dashboard">📊 Pulpit</button>
-        <button type="button" class="nav-item" data-page="integrations">🔌 Integracje</button>
-        <button type="button" class="nav-item" data-page="templates">📄 Szablony docs</button>
-        <button type="button" class="nav-item" data-page="memory">🧠 Pamięć</button>
-        <button type="button" class="nav-item" data-page="rag">🔍 Indeks RAG</button>
-        <button type="button" class="nav-item" data-page="standards">📐 Standardy kodu</button>
-        <button type="button" class="nav-item" data-page="skills">⚡ Skille</button>
-        <button type="button" class="nav-item" data-page="settings">⚙️ Ustawienia</button>
+        <button type="button" class="nav-item active" data-page="dashboard" data-i18n="nav.dashboard">📊 Pulpit</button>
+        <button type="button" class="nav-item" data-page="integrations" data-i18n="nav.integrations">🔌 Integracje</button>
+        <button type="button" class="nav-item" data-page="templates" data-i18n="nav.templates">📄 Szablony docs</button>
+        <button type="button" class="nav-item" data-page="memory" data-i18n="nav.memory">🧠 Pamięć</button>
+        <button type="button" class="nav-item" data-page="rag" data-i18n="nav.rag">🔍 Indeks RAG</button>
+        <button type="button" class="nav-item" data-page="standards" data-i18n="nav.standards">📐 Standardy kodu</button>
+        <button type="button" class="nav-item" data-page="skills" data-i18n="nav.skills">⚡ Skille</button>
+        <button type="button" class="nav-item" data-page="settings" data-i18n="nav.settings">⚙️ Ustawienia</button>
       </nav>
       <div class="sidebar-foot">
-        <div class="sys-pill" id="sys-status">Ładowanie…</div>
+        <div class="sys-pill" id="sys-status" data-i18n="loading">Ładowanie…</div>
       </div>
     </aside>
 
@@ -39,159 +39,158 @@
           <p class="page-sub" id="page-sub">Stan systemu OKO na Macu</p>
         </div>
         <div class="topbar-actions">
-          <button type="button" class="btn" id="btn-refresh">↻ Odśwież</button>
-          <button type="button" class="btn primary" id="btn-test-all">Test połączeń</button>
+          <div class="lang-toggle" role="group" aria-label="Language">
+            <button type="button" class="btn sm lang-btn" data-lang="pl">PL</button>
+            <button type="button" class="btn sm lang-btn" data-lang="en">EN</button>
+          </div>
+          <button type="button" class="btn" id="btn-refresh" data-i18n="refresh">↻ Odśwież</button>
+          <button type="button" class="btn primary" id="btn-test-all" data-i18n="testConnections">Test połączeń</button>
         </div>
       </header>
 
       <div class="content">
-        <!-- Dashboard -->
         <section class="page active" data-page="dashboard">
           <div class="stat-grid" id="dash-stats"></div>
           <div class="grid-2">
             <div class="card-block">
-              <h2>Szybkie akcje</h2>
+              <h2 data-i18n="dash.quickActions">Szybkie akcje</h2>
               <div class="chip-row">
-                <button type="button" class="chip" data-goto="integrations">Połącz GitHub</button>
-                <button type="button" class="chip" data-goto="templates">Dodaj szablon</button>
-                <button type="button" class="chip" data-goto="rag">Indeks RAG</button>
-                <button type="button" class="chip" data-goto="standards">Wgraj standard PDF</button>
-                <button type="button" class="chip" data-goto="skills">Import skilli</button>
+                <button type="button" class="chip" data-goto="integrations" data-i18n="dash.connectGitHub">Połącz GitHub</button>
+                <button type="button" class="chip" data-goto="templates" data-i18n="dash.addTemplate">Dodaj szablon</button>
+                <button type="button" class="chip" data-goto="rag" data-i18n="dash.ragIndex">Indeks RAG</button>
+                <button type="button" class="chip" data-goto="standards" data-i18n="dash.uploadStandard">Wgraj standard PDF</button>
+                <button type="button" class="chip" data-goto="skills" data-i18n="dash.importSkills">Import skilli</button>
               </div>
             </div>
             <div class="card-block">
-              <h2>System</h2>
+              <h2 data-i18n="dash.system">System</h2>
               <dl class="meta-list" id="sys-meta"></dl>
             </div>
           </div>
           <div class="card-block">
-            <h2>Skille aktywne</h2>
+            <h2 data-i18n="dash.activeSkills">Skille aktywne</h2>
             <div class="tag-row" id="dash-skills"></div>
           </div>
         </section>
 
-        <!-- Integrations -->
         <section class="page" data-page="integrations">
           <div class="grid-2">
             <div class="card-block">
               <div class="card-head">
-                <h2>GitHub</h2>
+                <h2 data-i18n="integrations.github">GitHub</h2>
                 <span class="badge" id="gh-badge">—</span>
               </div>
               <div class="tabs compact">
                 <button type="button" class="tab active" data-tab="gh-oauth">OAuth</button>
-                <button type="button" class="tab" data-tab="gh-pat">Token PAT</button>
+                <button type="button" class="tab" data-tab="gh-pat">PAT</button>
               </div>
               <div class="tab-panel active" id="gh-oauth">
-                <div class="hint box">Callback: <code id="gh-callback">…</code></div>
+                <div class="hint box"><span data-i18n="integrations.callback">Callback:</span> <code id="gh-callback">…</code></div>
                 <label>Client ID<input id="gh-client-id" autocomplete="off" /></label>
                 <label>Client Secret<input id="gh-client-secret" type="password" autocomplete="off" /></label>
                 <div class="btn-row">
-                  <button type="button" class="btn" id="gh-save-config">Zapisz OAuth</button>
-                  <button type="button" class="btn primary" id="gh-oauth-start">Połącz →</button>
+                  <button type="button" class="btn" id="gh-save-config" data-i18n="integrations.saveOAuth">Zapisz OAuth</button>
+                  <button type="button" class="btn primary" id="gh-oauth-start" data-i18n="integrations.connect">Połącz →</button>
                 </div>
               </div>
               <div class="tab-panel" id="gh-pat">
                 <label>Personal Access Token<input id="gh-pat-token" type="password" placeholder="ghp_…" /></label>
-                <button type="button" class="btn primary" id="gh-pat-save">Zapisz i testuj</button>
+                <button type="button" class="btn primary" id="gh-pat-save" data-i18n="integrations.savePat">Zapisz i testuj</button>
               </div>
               <div class="inline-status" id="gh-status"></div>
             </div>
 
             <div class="card-block">
               <div class="card-head">
-                <h2>UiPath Orchestrator</h2>
+                <h2 data-i18n="integrations.uipath">UiPath Orchestrator</h2>
                 <span class="badge" id="ui-badge">—</span>
               </div>
-              <div class="hint box">Redirect: <code id="ui-callback">…</code></div>
+              <div class="hint box"><span data-i18n="integrations.redirect">Redirect:</span> <code id="ui-callback">…</code></div>
               <label>Account URL<input id="ui-account" value="https://cloud.uipath.com" /></label>
-              <label>Organization<input id="ui-org" placeholder="folder w URL" /></label>
+              <label>Organization<input id="ui-org" data-i18n-placeholder="integrations.orgPlaceholder" placeholder="folder w URL" /></label>
               <label>Tenant<input id="ui-tenant" value="DefaultTenant" /></label>
               <label>Client ID<input id="ui-client-id" autocomplete="off" /></label>
               <label>Client Secret<input id="ui-client-secret" type="password" autocomplete="off" /></label>
               <div class="btn-row">
-                <button type="button" class="btn" id="ui-save-config">Zapisz</button>
-                <button type="button" class="btn primary" id="ui-oauth-start">Zaloguj →</button>
+                <button type="button" class="btn" id="ui-save-config" data-i18n="integrations.save">Zapisz</button>
+                <button type="button" class="btn primary" id="ui-oauth-start" data-i18n="integrations.login">Zaloguj →</button>
               </div>
               <div class="inline-status" id="ui-status"></div>
             </div>
           </div>
         </section>
 
-        <!-- Templates -->
         <section class="page" data-page="templates">
           <div class="split-editor">
             <div class="split-list">
               <div class="card-head">
-                <h2>Szablony dokumentacji</h2>
-                <button type="button" class="btn sm" id="tpl-new">+ Nowy</button>
+                <h2 data-i18n="templates.title">Szablony dokumentacji</h2>
+                <button type="button" class="btn sm" id="tpl-new" data-i18n="templates.new">+ Nowy</button>
               </div>
-              <p class="muted">Wzorce README, procedur, specyfikacji — osobno od standardów kodu.</p>
+              <p class="muted" data-i18n="templates.hint">Wzorce README, procedur, specyfikacji — osobno od standardów kodu.</p>
               <div class="table-wrap">
                 <table class="data-table">
-                  <thead><tr><th>Nazwa</th><th>Opis</th><th></th></tr></thead>
+                  <thead><tr><th data-i18n="templates.name">Nazwa</th><th data-i18n="templates.desc">Opis</th><th></th></tr></thead>
                   <tbody id="templates-body"></tbody>
                 </table>
               </div>
               <div class="btn-row">
-                <label class="btn sm">Import PDF/TXT<input id="tpl-file" type="file" accept=".pdf,.txt,.md" hidden /></label>
-                <button type="button" class="btn sm" id="tpl-sample">Przykład</button>
+                <label class="btn sm"><span data-i18n="templates.import">Import PDF/TXT</span><input id="tpl-file" type="file" accept=".pdf,.txt,.md" hidden /></label>
+                <button type="button" class="btn sm" id="tpl-sample" data-i18n="templates.sample">Przykład</button>
               </div>
             </div>
             <div class="split-form card-block">
-              <h3 id="tpl-form-title">Nowy szablon</h3>
+              <h3 id="tpl-form-title" data-i18n="templates.newForm">Nowy szablon</h3>
               <input type="hidden" id="tpl-id" />
-              <label>Nazwa<input id="tpl-name" placeholder="README API" /></label>
-              <label>Opis<input id="tpl-desc" placeholder="Krótki opis zastosowania" /></label>
-              <label>Treść szablonu<textarea id="tpl-content" rows="14" placeholder="Sekcje, układ, styl…"></textarea></label>
+              <label><span data-i18n="templates.formName">Nazwa</span><input id="tpl-name" data-i18n-placeholder="templates.namePh" placeholder="README API" /></label>
+              <label><span data-i18n="templates.formDesc">Opis</span><input id="tpl-desc" data-i18n-placeholder="templates.descPh" placeholder="Krótki opis zastosowania" /></label>
+              <label><span data-i18n="templates.formContent">Treść szablonu</span><textarea id="tpl-content" rows="14" data-i18n-placeholder="templates.contentPh" placeholder="Sekcje, układ, styl…"></textarea></label>
               <div class="btn-row">
-                <button type="button" class="btn primary" id="tpl-save">Zapisz</button>
-                <button type="button" class="btn ghost" id="tpl-cancel">Anuluj</button>
+                <button type="button" class="btn primary" id="tpl-save" data-i18n="save">Zapisz</button>
+                <button type="button" class="btn ghost" id="tpl-cancel" data-i18n="cancel">Anuluj</button>
               </div>
             </div>
           </div>
         </section>
 
-        <!-- Memory -->
         <section class="page" data-page="memory">
           <div class="card-block">
             <div class="card-head">
-              <h2>Fakty i notatki</h2>
+              <h2 data-i18n="memory.title">Fakty i notatki</h2>
               <div class="btn-row">
-                <button type="button" class="btn sm danger" id="memory-clear">Wyczyść globalną</button>
-                <button type="button" class="btn sm danger" id="memory-reset-all">Reset pamięci + RAG</button>
+                <button type="button" class="btn sm danger" id="memory-clear" data-i18n="memory.clearGlobal">Wyczyść globalną</button>
+                <button type="button" class="btn sm danger" id="memory-reset-all" data-i18n="memory.resetAll">Reset pamięci + RAG</button>
               </div>
             </div>
-            <p class="muted">
+            <p class="muted" data-i18n-html="memory.hint">
               Kontekst użytkownika dla SLM i agenta — nie mylić ze szablonami ani standardami PDF.
               Gdy coś jest nie tak: <strong>Reset pamięci + RAG</strong> czyści wszystkie profile i od razu przebudowuje indeks.
             </p>
-            <label>Nowa notatka<textarea id="memory-text" rows="3" placeholder="Zapamiętaj, że…"></textarea></label>
+            <label><span data-i18n="memory.newNote">Nowa notatka</span><textarea id="memory-text" rows="3" data-i18n-placeholder="memory.notePh" placeholder="Zapamiętaj, że…"></textarea></label>
             <div class="btn-row">
-              <button type="button" class="btn primary" id="memory-learn">Dodaj notatkę</button>
-              <label class="btn sm">Import pliku<input id="memory-file" type="file" accept=".pdf,.txt,.md,.csv,.json" hidden /></label>
+              <button type="button" class="btn primary" id="memory-learn" data-i18n="memory.addNote">Dodaj notatkę</button>
+              <label class="btn sm"><span data-i18n="memory.importFile">Import pliku</span><input id="memory-file" type="file" accept=".pdf,.txt,.md,.csv,.json" hidden /></label>
             </div>
           </div>
           <div class="card-block">
             <div class="table-wrap tall">
               <table class="data-table">
-                <thead><tr><th>Tytuł</th><th>Typ</th><th>Podgląd</th><th></th></tr></thead>
+                <thead><tr><th data-i18n="memory.titleCol">Tytuł</th><th data-i18n="memory.typeCol">Typ</th><th data-i18n="memory.previewCol">Podgląd</th><th></th></tr></thead>
                 <tbody id="memory-body"></tbody>
               </table>
             </div>
           </div>
         </section>
 
-        <!-- RAG -->
         <section class="page" data-page="rag">
           <div class="stat-grid" id="rag-stats"></div>
           <div class="grid-2">
             <div class="card-block">
               <div class="card-head">
-                <h2>Indeks wiedzy (RAG)</h2>
-                <button type="button" class="btn primary sm" id="rag-reindex">Wymuś indeksowanie</button>
+                <h2 data-i18n="rag.title">Indeks wiedzy (RAG)</h2>
+                <button type="button" class="btn primary sm" id="rag-reindex" data-i18n="rag.forceReindex">Wymuś indeksowanie</button>
               </div>
-              <p class="muted">
+              <p class="muted" data-i18n-html="rag.hint">
                 Łączy pamięć, standardy PDF i szablony docs w jeden indeks wyszukiwania.
                 Agent korzysta z RAG dopiero gdy status to <strong>gotowy</strong>.
               </p>
@@ -199,93 +198,90 @@
               <dl class="meta-list" id="rag-meta"></dl>
             </div>
             <div class="card-block">
-              <h2>Test wyszukiwania</h2>
-              <label>Zapytanie<input id="rag-query" placeholder="np. code review, README, imię użytkownika" /></label>
-              <button type="button" class="btn" id="rag-search">Szukaj w RAG</button>
+              <h2 data-i18n="rag.searchTest">Test wyszukiwania</h2>
+              <label><span data-i18n="rag.query">Zapytanie</span><input id="rag-query" data-i18n-placeholder="rag.queryPh" placeholder="np. code review, README, imię użytkownika" /></label>
+              <button type="button" class="btn" id="rag-search" data-i18n="rag.search">Szukaj w RAG</button>
               <div class="table-wrap tall" style="margin-top:12px">
                 <table class="data-table">
-                  <thead><tr><th>Trafienie</th><th>Typ</th><th>Score</th></tr></thead>
+                  <thead><tr><th data-i18n="rag.hit">Trafienie</th><th data-i18n="rag.type">Typ</th><th data-i18n="rag.score">Score</th></tr></thead>
                   <tbody id="rag-hits-body"></tbody>
                 </table>
               </div>
             </div>
           </div>
           <div class="card-block">
-            <h2>Źródła w indeksie</h2>
+            <h2 data-i18n="rag.sources">Źródła w indeksie</h2>
             <div class="table-wrap tall">
               <table class="data-table">
-                <thead><tr><th>Typ</th><th>Nazwa</th><th>Chunki</th><th>Znaki</th><th>W RAG</th></tr></thead>
+                <thead><tr><th data-i18n="rag.sourceType">Typ</th><th data-i18n="rag.sourceName">Nazwa</th><th data-i18n="rag.chunks">Chunki</th><th data-i18n="rag.chars">Znaki</th><th data-i18n="rag.inRag">W RAG</th></tr></thead>
                 <tbody id="rag-sources-body"></tbody>
               </table>
             </div>
           </div>
         </section>
 
-        <!-- Standards -->
         <section class="page" data-page="standards">
           <div class="card-block">
             <div class="card-head">
-              <h2>Standardy kodu (PDF)</h2>
-              <label class="btn primary sm">+ Dodaj PDF<input id="standards-file" type="file" accept=".pdf,application/pdf" hidden /></label>
+              <h2 data-i18n="standards.title">Standardy kodu (PDF)</h2>
+              <label class="btn primary sm"><span data-i18n="standards.addPdf">+ Dodaj PDF</span><input id="standards-file" type="file" accept=".pdf,application/pdf" hidden /></label>
             </div>
-            <p class="muted">Normy code review — agent cytuje je mówiąc o kodzie w stylu HAL / GLaDOS / TARS.</p>
+            <p class="muted" data-i18n="standards.hint">Normy code review — agent cytuje je mówiąc o kodzie w stylu HAL / GLaDOS / TARS.</p>
             <div class="table-wrap">
               <table class="data-table">
-                <thead><tr><th>Plik</th><th>Nazwa</th><th>Tekst</th><th></th></tr></thead>
+                <thead><tr><th data-i18n="standards.file">Plik</th><th data-i18n="standards.name">Nazwa</th><th data-i18n="standards.text">Tekst</th><th></th></tr></thead>
                 <tbody id="standards-body"></tbody>
               </table>
             </div>
-            <p class="hint muted" id="standards-poppler-hint">Sprawdzanie poppler…</p>
+            <p class="hint muted" id="standards-poppler-hint" data-i18n="standards.checkingPoppler">Sprawdzanie poppler…</p>
           </div>
         </section>
 
-        <!-- Skills -->
         <section class="page" data-page="skills">
           <div class="grid-2">
             <div class="card-block">
-              <h2>Lista skilli</h2>
+              <h2 data-i18n="skills.list">Lista skilli</h2>
               <div class="table-wrap tall">
                 <table class="data-table">
-                  <thead><tr><th>Nazwa</th><th>Opis</th><th>Webhook</th><th></th></tr></thead>
+                  <thead><tr><th data-i18n="skills.name">Nazwa</th><th data-i18n="skills.desc">Opis</th><th data-i18n="skills.webhook">Webhook</th><th></th></tr></thead>
                   <tbody id="skills-body"></tbody>
                 </table>
               </div>
             </div>
             <div class="card-block">
-              <h2>Import / n8n</h2>
-              <label>Import JSON (merge)
+              <h2 data-i18n="skills.importTitle">Import / n8n</h2>
+              <label><span data-i18n="skills.importJson">Import JSON (merge)</span>
                 <textarea id="skills-json" rows="8" placeholder='{"skills":[{"name":"…","description":"…","webhook":"…"}]}'></textarea>
               </label>
               <div class="btn-row">
-                <button type="button" class="btn primary" id="skills-import">Importuj</button>
-                <button type="button" class="btn" id="skills-reload">Odśwież</button>
+                <button type="button" class="btn primary" id="skills-import" data-i18n="skills.importBtn">Importuj</button>
+                <button type="button" class="btn" id="skills-reload" data-i18n="skills.reload">Odśwież</button>
               </div>
               <hr class="divider" />
-              <label>n8n Base URL<input id="n8n-base" placeholder="https://n8n.example.com" /></label>
-              <label>n8n Auth header<input id="n8n-auth" placeholder="Authorization: Bearer …" /></label>
-              <button type="button" class="btn" id="n8n-save">Zapisz n8n</button>
+              <label><span data-i18n="skills.n8nBase">n8n Base URL</span><input id="n8n-base" placeholder="https://n8n.example.com" /></label>
+              <label><span data-i18n="skills.n8nAuth">n8n Auth header</span><input id="n8n-auth" placeholder="Authorization: Bearer …" /></label>
+              <button type="button" class="btn" id="n8n-save" data-i18n="skills.saveN8n">Zapisz n8n</button>
             </div>
           </div>
         </section>
 
-        <!-- Settings -->
         <section class="page" data-page="settings">
           <div class="grid-2">
             <div class="card-block">
-              <h2>Wyszukiwanie internetowe</h2>
-              <label class="row-check"><input type="checkbox" id="web-enabled" checked /> Włączone (DuckDuckGo)</label>
-              <label>Serper API key (Google — opcjonalnie)<input id="serper-key" type="password" /></label>
-              <button type="button" class="btn primary" id="web-save">Zapisz</button>
+              <h2 data-i18n="settings.webSearch">Wyszukiwanie internetowe</h2>
+              <label class="row-check"><input type="checkbox" id="web-enabled" checked /> <span data-i18n="settings.webEnabled">Włączone (DuckDuckGo)</span></label>
+              <label><span data-i18n="settings.serperKey">Serper API key (Google — opcjonalnie)</span><input id="serper-key" type="password" /></label>
+              <button type="button" class="btn primary" id="web-save" data-i18n="save">Zapisz</button>
             </div>
             <div class="card-block">
-              <h2>Aktywacja</h2>
-              <p class="muted">Po zmianach integracji i skilli kliknij, aby przeładować webhooki lokalne.</p>
-              <button type="button" class="btn primary" id="finish">Zakończ i aktywuj skille</button>
+              <h2 data-i18n="settings.activation">Aktywacja</h2>
+              <p class="muted" data-i18n="settings.activationHint">Po zmianach integracji i skilli kliknij, aby przeładować webhooki lokalne.</p>
+              <button type="button" class="btn primary" id="finish" data-i18n="settings.finish">Zakończ i aktywuj skille</button>
               <div class="inline-status" id="finish-status"></div>
             </div>
           </div>
           <div class="card-block">
-            <h2>Linki</h2>
+            <h2 data-i18n="settings.links">Linki</h2>
             <div class="chip-row">
               <a class="chip" href="/health" target="_blank">Health JSON</a>
               <a class="chip" href="/" target="_blank">Root</a>
@@ -300,12 +296,13 @@
 
   <dialog class="modal" id="view-modal">
     <div class="modal-head">
-      <h3 id="modal-title">Podgląd</h3>
+      <h3 id="modal-title" data-i18n="preview">Podgląd</h3>
       <button type="button" class="btn icon-only" id="modal-close">✕</button>
     </div>
     <pre class="modal-body" id="modal-body"></pre>
   </dialog>
 
+  <script src="/setup/i18n.js"></script>
   <script src="/setup/app.js"></script>
 </body>
 </html>

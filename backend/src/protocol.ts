@@ -24,6 +24,8 @@ export type ClientMessage =
       clientVersion: string;
       sessionId?: string;
       skin?: string;
+      /** pl | en — conversation language from R1 settings. */
+      lang?: string;
       memoryDeviceId?: string;
       tarsTraits?: { honesty?: number; humor?: number; sarcasm?: number };
     }

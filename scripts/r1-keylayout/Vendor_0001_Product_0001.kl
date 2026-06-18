@@ -1,2 +1,3 @@
 # Rabbit R1 — mtk-pmic-keys (side button on PMIC)
-key 116   F1
+# WAKE keeps hardware wake; F1 goes to foreground app (OKO PTT).
+key 116   F1   WAKE

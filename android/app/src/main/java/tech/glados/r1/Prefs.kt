@@ -54,6 +54,14 @@ class Prefs(context: Context) {
     val skin: AgentSkin
         get() = AgentSkin.fromId(skinId)
 
+    /** pl | en — conversation language for STT, SLM, and TTS. */
+    var conversationLang: String
+        get() = sp.getString("conversationLang", "pl") ?: "pl"
+        set(value) = sp.edit().putString("conversationLang", value).apply()
+
+    val isEnglishConversation: Boolean
+        get() = conversationLang.equals("en", ignoreCase = true)
+
     var tarsHonesty: Int
         get() = sp.getInt("tarsHonesty", 90).coerceIn(0, 100)
         set(value) = sp.edit().putInt("tarsHonesty", value.coerceIn(0, 100)).apply()

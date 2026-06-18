@@ -46,7 +46,8 @@ import {
 } from "./web-search.js";
 import { WhisperStt } from "./stt.js";
 import { GladosTts } from "./tts.js";
-import { polishForSpeech } from "./spoken-polish.js";
+import { prepareForSpeech } from "./spoken-polish.js";
+import { normalizeConversationLang, type ConversationLang } from "./conversation-lang.js";
 import {
   CONTINUE_BUSY_HINT,
   isStopCommand,
@@ -100,6 +101,7 @@ export class Session {
   private progressTick = 0;
   private asideSpeaking = false;
   private agentSkin: AgentSkinId = "hal9000";
+  private conversationLang: ConversationLang = "pl";
   private deviceMemoryId = "";
   private lastUserTranscript = "";
   private lastAssistantText = "";
@@ -209,15 +211,23 @@ export class Session {
   private async onMessage(msg: ClientMessage): Promise<void> {
     switch (msg.type) {
       case "hello":
-        log.info(`session ${this.id}: hello from ${msg.device} v${msg.clientVersion} skin=${msg.skin ?? "hal9000"}`);
+        log.info(`session ${this.id}: hello from ${msg.device} v${msg.clientVersion} skin=${msg.skin ?? "hal9000"} lang=${msg.lang ?? "pl"}`);
         {
           const next = normalizeSkinId(msg.skin ?? this.agentSkin);
-          if (next !== this.agentSkin) {
-            this.agentSkin = next;
+          const nextLang = normalizeConversationLang(msg.lang);
+          if (next !== this.agentSkin || nextLang !== this.conversationLang) {
+            if (next !== this.agentSkin) {
+              this.agentSkin = next;
+              log.info(`session ${this.id}: agent skin → ${next}`);
+            }
+            if (nextLang !== this.conversationLang) {
+              this.conversationLang = nextLang;
+              log.info(`session ${this.id}: conversation lang → ${nextLang}`);
+            }
             this.brain.resetChatContext?.();
-            log.info(`session ${this.id}: agent skin → ${next}`);
           } else {
             this.agentSkin = next;
+            this.conversationLang = nextLang;
           }
           if (msg.tarsTraits) {
             this.deviceContext.tarsTraits = normalizeTarsTraits(msg.tarsTraits);
@@ -484,7 +494,7 @@ export class Session {
   }
 
   private async finalizeSpeech(text: string, tarsAlreadyShaped = false): Promise<string> {
-    let spoken = polishForSpeech(text);
+    let spoken = prepareForSpeech(text, this.conversationLang);
     if (this.agentSkin === "hal9000") {
       const userName = this.memory ? await this.memory.getUserName(this.memoryKey()) : undefined;
       spoken = sanitizeHalSpeech(spoken, this.agentSkin, userName);
@@ -514,7 +524,12 @@ export class Session {
     if (this.busy) {
       if (this.canInterrupt()) {
         this.interruptRecording = true;
+        if (this.phase === "speaking") {
+          log.info(`session ${this.id}: interrupt — stopping speech`);
+          this.cancelled = true;
+        }
       } else {
+        log.info(`session ${this.id}: ptt rejected phase=${this.phase} detail=${this.phaseDetail ?? ""}`);
         this.send({ type: "ptt_rejected", reason: "Still processing the previous request." });
         return;
       }
@@ -557,7 +572,7 @@ export class Session {
     this.setStatus("thinking", "transcribing");
     let transcript = "";
     try {
-      transcript = await this.stt.transcribe(pcm, this.inputSampleRate);
+      transcript = await this.stt.transcribe(pcm, this.inputSampleRate, this.conversationLang);
     } catch (err) {
       log.error(`session ${this.id}: STT failed`, err);
       this.send({ type: "error", message: "Speech recognition failed." });
@@ -634,13 +649,13 @@ export class Session {
       if (await this.tryTemplateTurn(transcript)) return;
       if (await this.tryMemoryTurn(transcript)) return;
       if (isLocationQuery(transcript)) await this.resolveLocationLabel();
-      const instant = tryDeviceReply(transcript, this.deviceContext, this.agentSkin);
+      const instant = tryDeviceReply(transcript, this.deviceContext, this.agentSkin, this.conversationLang);
       if (instant) {
         log.info(`session ${this.id}: device fast-path reply`);
         await this.speak(instant, transcript, true);
         return;
       }
-      const chat = tryChatReply(transcript, this.deviceContext, this.agentSkin);
+      const chat = tryChatReply(transcript, this.deviceContext, this.agentSkin, this.conversationLang);
       if (chat) {
         log.info(`session ${this.id}: chat template reply`);
         await this.speak(chat, transcript, true);
@@ -690,6 +705,7 @@ export class Session {
         onAssistantText: cloudTurn ? (text) => { void this.maybeSpeakCodeComment(text); } : undefined,
         isCancelled: () => this.cancelled,
         skin: this.agentSkin,
+        lang: this.conversationLang,
         tarsTraits: this.deviceContext.tarsTraits,
         memoryBlock,
         templatesBlock,
@@ -702,8 +718,11 @@ export class Session {
   }
 
   private canInterrupt(): boolean {
-    return this.phase === "working" ||
-      (this.phase === "thinking" && this.phaseDetail === "cloud");
+    return (
+      this.phase === "working" ||
+      this.phase === "speaking" ||
+      this.phase === "thinking"
+    );
   }
 
   private async handleInterruptUtterance(pcm: Buffer): Promise<void> {
@@ -712,7 +731,7 @@ export class Session {
 
     let transcript = "";
     try {
-      transcript = await this.stt.transcribe(pcm, this.inputSampleRate);
+      transcript = await this.stt.transcribe(pcm, this.inputSampleRate, this.conversationLang);
     } catch (err) {
       log.error(`session ${this.id}: interrupt STT failed`, err);
       this.send({ type: "error", message: "Speech recognition failed." });
@@ -728,8 +747,14 @@ export class Session {
     log.info(`session ${this.id}: interrupt transcript "${transcript}"`);
 
     if (isStopCommand(transcript)) {
+      log.info(`session ${this.id}: stop command — cancelling active turn`);
       this.cancelled = true;
       await this.brain.cancelActiveTurn?.();
+      return;
+    }
+
+    if (this.cancelled && this.phase === "idle") {
+      this.setStatus("idle");
       return;
     }
 
@@ -789,7 +814,7 @@ export class Session {
     try {
       const spoken = await this.finalizeSpeech(text);
       log.info(`session ${this.id}: aside chars=${spoken.length}`);
-      const { pcm, sampleRate } = await this.tts.synthesize(spoken, this.agentSkin);
+      const { pcm, sampleRate } = await this.tts.synthesize(spoken, this.agentSkin, this.conversationLang);
       if (pcm.length === 0 || this.cancelled || !this.isWsOpen()) return;
 
       this.send({ type: "assistant_text", text: spoken, final: false });
@@ -824,7 +849,7 @@ export class Session {
     const spoken = await this.finalizeSpeech(text, tarsAlreadyShaped);
     this.lastAssistantText = spoken;
     log.info(`session ${this.id}: speak chars=${spoken.length} "${spoken.slice(0, 100)}${spoken.length > 100 ? "…" : ""}"`);
-    const { pcm, sampleRate } = await this.tts.synthesize(spoken, this.agentSkin);
+    const { pcm, sampleRate } = await this.tts.synthesize(spoken, this.agentSkin, this.conversationLang);
     if (pcm.length === 0 || this.cancelled) return;
 
     this.pendingDelivery = {
@@ -844,7 +869,7 @@ export class Session {
       this.deviceContext.locationLabel = undefined;
       return;
     }
-    const label = await reverseGeocodeLabel(loc.lat, loc.lon);
+    const label = await reverseGeocodeLabel(loc.lat, loc.lon, this.conversationLang);
     if (label) this.deviceContext.locationLabel = label;
   }
 

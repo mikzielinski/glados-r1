@@ -52,6 +52,9 @@ say "Restart Android (reload InputReader keymaps)"
 "${ADB[@]}" shell "setprop ctl.restart zygote" || "${ADB[@]}" reboot
 
 echo
-echo "Done. Side button should send KEYCODE_F1 to OKO (PTT)."
-echo "Test: hold side button in OKO, or: adb shell input keyevent 131"
-echo "Re-run this script if PTT reverts to power after OTA."
+echo "Done. Side button:"
+echo "  · short hold  → PTT in OKO"
+echo "  · long hold (~3 s) → sleep screen (enable Device Admin in SET once)"
+echo "  · press when asleep → wake (no accidental PTT for ~0.7 s)"
+echo "Test PTT: hold side button in OKO, or: adb shell input keyevent 131"
+echo "Restore stock power: ./scripts/unfix-r1-side-button.sh ${SERIAL:-<serial>}"

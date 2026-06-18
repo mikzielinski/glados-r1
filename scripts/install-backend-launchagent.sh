@@ -15,10 +15,10 @@ NPX="$(command -v npx || true)"
 
 mkdir -p "$LOG_DIR"
 
-# Prefer compiled start if built; else tsx dev is too heavy for launchd — use tsx without watch.
+# Prefer compiled dist; fallback to tsx (no watch — launchd-friendly).
 RUN="$NPX tsx src/index.ts"
 if [ -f "$BACKEND/dist/index.js" ]; then
-  RUN="$NODE --experimental-strip-types dist/index.js"
+  RUN="$NODE dist/index.js"
 fi
 
 cat > "$PLIST" <<EOF
@@ -34,7 +34,7 @@ cat > "$PLIST" <<EOF
   <array>
     <string>/bin/zsh</string>
     <string>-lc</string>
-    <string>cd '${BACKEND}' && ${RUN}</string>
+    <string>cd '${BACKEND}' && exec caffeinate -i ${RUN}</string>
   </array>
   <key>RunAtLoad</key>
   <true/>
@@ -58,4 +58,5 @@ launchctl bootstrap "gui/$(id -u)" "$PLIST"
 launchctl enable "gui/$(id -u)/com.oko.glados-backend"
 echo "Installed: $PLIST"
 echo "Logs: $LOG_DIR/backend.*.log"
+echo "Mac stays awake on AC while backend runs (caffeinate -i)."
 echo "Unload: launchctl bootout gui/$(id -u)/com.oko.glados-backend"

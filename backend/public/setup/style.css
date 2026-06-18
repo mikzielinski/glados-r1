@@ -152,6 +152,26 @@ body {
   margin-left: auto;
   display: flex;
   gap: 8px;
+  align-items: center;
+}
+.lang-toggle {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.lang-toggle .lang-btn {
+  border: none;
+  border-radius: 0;
+  min-width: 36px;
+  padding: 6px 10px;
+  background: transparent;
+  color: var(--muted);
+}
+.lang-toggle .lang-btn.active {
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-weight: 600;
 }
 
 .content {

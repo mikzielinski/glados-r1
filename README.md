@@ -152,7 +152,9 @@ Szczegóły: [`android/README.md`](android/README.md).
 
 | Akcja | Gest |
 |-------|------|
-| Mów (PTT) | Przytrzymaj **oko / lens** |
+| Mów (PTT) | Krótko **boczny** lub przytrzymaj **oko** |
+| Uśpij ekran | Długo **boczny** (~3 s) — w SET włącz „Uśpienie ekranu” |
+| Wybudzenie | Krótkie naciśnięcie bocznego (bez PTT przez ~0,7 s) |
 | Zdjęcie dla agenta | Long-press na lens |
 | Transkrypt | Kółko góra/dół |
 | Ustawienia | **SET** (prawy górny róg) |
@@ -172,7 +174,26 @@ Szczegóły: [`android/README.md`](android/README.md).
 
 Pełny reset z panelu: **Pamięć → Reset pamięci + RAG** (nie usuwa PDF standardów ani szablonów).
 
-## Praca bez kabla USB
+## Praca bez kabla USB i bez Maca
+
+**Kabel** — tylko instalacja APK. **Mac** — nie jest wymagany; wymagany jest **backend** (dowolny host).
+
+| Scenariusz | Co zrobić |
+|------------|-----------|
+| **Mac w domu** | LaunchAgent + `HOST=0.0.0.0`, R1 w tej samej WiFi |
+| **Mac może spać** | Backend na **VPS / NAS** — patrz [`docs/backend-hosting.md`](docs/backend-hosting.md) |
+| **R1 w terenie** | Tailscale na R1 + VPS; URL `ws://100.x.x.x:8787/ws` w SET |
+| **Backend padł** | OKO **tryb lokalny**: bateria, sieć, powitanie (Android STT/TTS) |
+
+```bash
+./scripts/setup-linux-backend.sh   # VPS / Linux — systemd
+./scripts/wireless-setup-info.sh     # URL-e do SET
+./scripts/install-backend-launchagent.sh  # tylko Mac dev
+```
+
+Szczegóły VPS: [`docs/backend-hosting.md`](docs/backend-hosting.md).
+
+## Praca bez kabla USB (LAN)
 
 **Kabel nie jest potrzebny do codziennej pracy** — tylko do pierwszej instalacji APK / flasha / side-button fix.
 
@@ -221,7 +242,7 @@ mikrofon, ekran, PTT    ──WS──▶  STT / TTS / sesje / RAG / skille  ─
 
 - R1: cienki klient — LLM **nie na urządzeniu**, tylko na hoście backendu (+ Cursor w chmurze na `code`)
 - Backend URL na R1: `ws://<ip-hosta>:8787/ws` (Tailscale, LAN lub publiczny serwer)
-- Side button wymaga `scripts/fix-r1-side-button.sh` (KEYCODE_POWER → PTT)
+- Side button wymaga `./scripts/fix-r1-side-button.sh` (POWER→F1). Krótko=PTT, długo=uśpienie. Cofnięcie: `unfix-r1-side-button.sh`
 
 > Odblokowanie bootloadera voiduje gwarancję R1.
 
